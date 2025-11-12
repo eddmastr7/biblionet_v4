@@ -1,7 +1,7 @@
 /* ===== ESTILOS ESPECÍFICOS PARA LOGIN ===== */
 :root {
     --primary-color: #0d6efd;
-    --text-dark: #212529;
+    --text-dark: #101113;
     --text-light: #6c757d;
 }
 
@@ -12,6 +12,12 @@
     justify-content: center;
     display: flex;
     align-items: center;
+}
+
+.input-group-text {
+  background-color: var(--light-bg);
+  border-right: none;
+  color: var(--primary-color);
 }
 
 .login-card {
@@ -28,7 +34,7 @@
 .login-title {
     font-size: 2.25rem;
     font-weight: 700;
-    color: var(--text-dark);
+    color: var(--primary-color);
     margin-bottom: 0.5rem;
 }
 
@@ -54,7 +60,7 @@
 
 .form-control-lg:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+    box-shadow: 0 0 0 3px rgba(108, 163, 245, 0.356);
     outline: none;
 }
 
@@ -70,6 +76,12 @@
     border-color: var(--primary-color);
 }
 .form-check-label { color: var(--text-dark); font-size: 0.95rem; }
+
+.input-group-text {
+  background-color: var(--light-bg);
+  border-right: none;
+  color: var(--primary-color);
+}
 
 .text-link {
     color: var(--primary-color);

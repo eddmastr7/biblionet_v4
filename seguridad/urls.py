@@ -2,9 +2,11 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("login/empleado/", views.login_view, name="login"),
-    path("salir/", views.logout_view, name="logout"),
-    path("admin/", views.admin_home, name="admin_home"),
-    path("empleado/", views.empleado_home, name="empleado_home"),
-    path("empleados/registrar/", views.crear_empleado, name="registrar_empleado"),  # opcional, sólo admin
+    path("inicio_sesion/empleado/", views.iniciar_sesion_empleado, name="inicio_sesion"),
+    path("salir/", views.cerrar_sesion_empleado, name="cerrar_sesion"),
+    path("pantalla_inicio/administrador/", views.panel_administrador, name="panel_administrador"),
+    path("pantalla_inicio/bibliotecario/", views.panel_bibliotecario, name="panel_bibliotecario"),
+    path("empleados/registrar/", views.registrar_empleado, name="registrar_empleado"),
+    path("empleados/inventario/",views.inventario, name="inventario")
+    
 ]

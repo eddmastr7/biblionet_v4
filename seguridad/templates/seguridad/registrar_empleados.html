@@ -1,176 +1,181 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registrar Usuario - BiblioNet</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="stylesheet" href="{% static 'css/registrar_empleado.css' %}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Empleado - BiblioNet</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/administrador.css' %}">
 </head>
+
 <body>
-  <input type="checkbox" id="sidebar-toggle" class="d-none">
-
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
-    <div class="container-fluid">
-      <label for="sidebar-toggle" class="navbar-toggler sidebar-toggle-btn me-3">
-        <i class="fas fa-bars"></i>
-      </label>
-
-      <a class="navbar-brand d-flex align-items-center" href="{% url 'admin_home' %}">
-        <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" width="60" class="me-2 brand-logo">
-        <span class="fw-bold">BiblioNet</span>
-      </a>
-
-      <div class="navbar-nav ms-auto">
-        <div class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown">
-            <img src="{% static 'imagenes/estanteria_libros.jpg' %}" alt="Usuario" class="rounded-circle me-2 user-avatar">
-            <span class="user-name">Administrador</span>
-          </a>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <li><a class="dropdown-item" href="#"><i class="fas fa-user-edit me-2"></i>Perfil</a></li>
-            <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configuración</a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
-          </ul>
+    <!-- Navbar Original -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'panel_administrador' %}">
+                <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" class="me-2 brand-logo">
+                <span class="brand-text">BiblioNet</span>
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="{% static 'imagenes/foto_perfil.jpeg' %}" alt="Usuario" class="rounded-circle me-2 user-avatar">
+                        <span class="user-name">{{ usuario_actual.nombre }} {{ usuario_actual.apellido }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-user-edit me-2"></i>Mi Perfil</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configuración</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{% url 'cerrar_sesion' %}"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+            </div>                   
         </div>
-      </div>
-    </div>
-  </nav>
-
-  <!-- Sidebar -->
-  <aside class="sidebar bg-dark text-white">
-    <nav class="sidebar-nav p-3">
-      <div class="nav-section mb-4">
-        <a href="{% url 'admin_home' %}" class="nav-link"><i class="fas fa-home me-3"></i><span>Dashboard</span></a>
-        <a href="#" class="nav-link"><i class="fas fa-book me-3"></i><span>Inventario</span></a>
-        <a href="#" class="nav-link"><i class="fas fa-shopping-cart me-3"></i><span>Ventas</span></a>
-        <a href="#" class="nav-link"><i class="fas fa-exchange-alt me-3"></i><span>Préstamos</span></a>
-        <a href="#" class="nav-link"><i class="fas fa-exclamation-triangle me-3"></i><span>Devoluciones</span></a>
-      </div>
-
-      <div class="nav-section mb-4">
-        <h6 class="text-uppercase small text-secondary mb-2">Gestión Interna</h6>
-        <a href="{% url 'crear_empleado' %}" class="nav-link active"><i class="fas fa-users me-3"></i><span>Empleados</span></a>
-        <a href="#" class="nav-link"><i class="fas fa-user me-3"></i><span>Clientes</span></a>
-        <a href="#" class="nav-link"><i class="fas fa-chart-pie me-3"></i><span>Reportes</span></a>
-      </div>
-
-      <div class="nav-section">
-        <a href="#" class="nav-link"><i class="fas fa-cog me-3"></i><span>Configuración</span></a>
-        <a href="{% url 'logout' %}" class="nav-link text-danger"><i class="fas fa-sign-out-alt me-3"></i><span>Cerrar Sesión</span></a>
-      </div>
     </nav>
-  </aside>
 
-  <!-- Contenido Principal -->
-  <main class="main-content">
-    <div class="container-fluid py-4">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2 mb-0">
-          <i class="fas fa-user me-2"></i>
-          Empleados
-        </h1>
+    <!-- Contenido Principal -->
+    <main class="main-content">
+        <div class="container-fluid py-4">
 
-        <div class="d-none d-lg-flex mx-auto" style="max-width: 500px; width: 100%;">
-          <div class="input-group search-container">
-            <input type="text" class="form-control search-input" placeholder="Buscar Empleado, Nombre, apellido..." disabled>
-            <button class="btn btn-light search-btn" type="button" disabled>
-              <i class="fas fa-search"></i>
-            </button>
-          </div>
-        </div>
-      </div>
+          <!-- Botones de Historial -->
+            <div class="row history-buttons">
+                <div class="col-md-6 mb-3">
+                    <button class="btn btn-custom-1 w-100 btn-history">
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        Historial de Compras
+                    </button>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <button class="btn btn-custom-2 w-100 btn-history">
+                        <i class="fas fa-history me-2"></i>
+                        Historial de Préstamos
+                    </button>
+                </div>
 
-      <!-- Mensajes -->
-      {% if ok %}
-        <div class="alert alert-success">{{ ok }}</div>
-      {% endif %}
-      {% if error %}
-        <div class="alert alert-danger">{{ error }}</div>
-      {% endif %}
-
-      <!-- Formulario para Nuevo Usuario -->
-      <div class="row">
-        <div class="col-12">
-          <div class="card">
-            <div class="card-header">
-              <h5 class="card-title mb-0">
-                <i class="fas fa-user-plus me-2"></i>
-                Agregar Nuevo Empleado
-              </h5>
+                <div class="col-md-6 mb-3">
+                    <button class="btn btn-custom-2 w-100 btn-history">
+                        <i class="fas fa-history me-2"></i>
+                        Historial de ventas
+                    </button>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <a href="{% url 'registrar_empleado' %}" class="btn btn-custom-2 w-100 btn-history">
+                      <i class="fas fa-user-plus me-2"></i>
+                    Agregar nuevo empleado
+                    </a>
+                </div> 
             </div>
-            <div class="card-body">
-              <form method="post" novalidate>
-                {% csrf_token %}
-                <div class="row">
-                  <div class="col-md-6">
-                    <div class="mb-3">
-                      <label for="nombre" class="form-label">Nombre Completo *</label>
-                      <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Ingrese el nombre completo" required>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="mb-3">
-                      <label for="email" class="form-label">Email *</label>
-                      <input type="email" class="form-control" id="email" name="email" placeholder="Ingrese el email" required>
-                    </div>
-                  </div>
-                </div>
 
-                <div class="row">
-                  <div class="col-md-6">
-                    <div class="mb-3">
-                      <label for="clave" class="form-label">Clave *</label>
-                      <input type="password" class="form-control" id="clave" name="clave" placeholder="Ingrese la clave" required>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="mb-3">
-                      <label for="rol" class="form-label">Rol *</label>
-                      <select class="form-select" id="rol" name="rol" required>
-                        <option value="">Seleccionar rol</option>
-                        <option value="admin">Administrador</option>
-                        <option value="empleado">Empleado</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
+             <!-- registro deempleados -->
+           
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="card shadow">
+                        <div class="card-header  text-white" style="background-color: #2c5aa0">
+                            <h4 class="mb-0">
+                                <i class="fas fa-user-plus me-2"></i>
+                                Registrar Nuevo Empleado
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            
+                            <!-- Mensajes de éxito/error -->
+                            {% if exito %}
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                <i class="fas fa-check-circle me-2"></i>
+                                {{ exito }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            {% endif %}
 
-                <div class="row">
-                  <div class="col-md-6">
-                    <div class="mb-3">
-                      <label for="estado" class="form-label">Estado</label>
-                      <select class="form-select" id="estado" name="estado">
-                        <option value="activo" selected>Activo</option>
-                        <option value="inactivo">Inactivo</option>
-                        <option value="suspendido">Suspendido</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
+                            {% if error %}
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                {{ error }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            {% endif %}
 
-                <div class="text-end">
-                  <a href="{% url 'admin_home' %}" class="btn btn-secondary me-2">
-                    <i class="fas fa-undo me-1"></i>
-                    Cancelar
-                  </a>
-                  <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save me-1"></i>
-                    Guardar Usuario
-                  </button>
+                            <form method="post" novalidate>
+                                {% csrf_token %}
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="nombre" class="form-label">Nombre *</label>
+                                            <input type="text" class="form-control" id="nombre" name="nombre" 
+                                                   placeholder="Ingrese el nombre" value="{{ request.POST.nombre }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="apellido" class="form-label">Apellido *</label>
+                                            <input type="text" class="form-control" id="apellido" name="apellido" 
+                                                   placeholder="Ingrese el apellido" value="{{ request.POST.apellido }}" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Email *</label>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           placeholder="Ingrese el email" value="{{ request.POST.email }}" required>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="clave" class="form-label">Contraseña *</label>
+                                            <input type="password" class="form-control" id="clave" name="clave" 
+                                                   placeholder="Ingrese la contraseña" required>
+                                            <div class="form-text">Mínimo 8 caracteres</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="rol" class="form-label">Rol *</label>
+                                            <select class="form-select" id="rol" name="rol" required>
+                                                <option value="">Seleccionar rol</option>
+                                                {% for rol in roles %}
+                                                <option value="{{ rol.nombre_formulario }}" 
+                                                        {% if request.POST.rol == rol.nombre_formulario %}selected{% endif %}>
+                                                    {{ rol.nombre_mostrar }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="estado" class="form-label">Estado</label>
+                                    <select class="form-select" id="estado" name="estado">
+                                        <option value="activo" {% if request.POST.estado != 'activo' %}selected{% endif %}>Activo</option>
+                                        <option value="inactivo" {% if request.POST.estado == 'inactivo' %}selected{% endif %}>Inactivo</option>
+                                    </select>
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'panel_administrador' %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left me-1"></i>
+                                        Volver al Dashboard
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i>
+                                        Registrar Empleado
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
-              </form>
-            </div>    
-          </div>   
+            </div>
         </div>
-      </div>
-    </div>
-  </main>
+    </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

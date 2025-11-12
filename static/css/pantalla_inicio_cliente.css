@@ -1,4 +1,5 @@
-:root {
+
+        :root {
             --primary-blue: #2c5aa0;
             --primary-blue-dark: #1e3a8a;
             --accent-green: #2ecc71;
@@ -72,7 +73,6 @@
     background: linear-gradient(135deg, var(--accent-green), var(--accent-green-dark));
     border: none;
     color: white;
-    
 }
 
         .dropdown-toggle {

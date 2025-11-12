@@ -1,217 +1,252 @@
 from functools import wraps
-
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_protect
 from django.contrib.auth.hashers import check_password, make_password
-from django.contrib.auth import logout as auth_logout   # 👈 faltaba este import
+from django.contrib.auth import logout as auth_logout  
 from django.utils import timezone
 
-from biblio.models import Usuarios, Roles, Libros, Prestamos
-
+from biblio.models import Usuarios, Roles, Libros, Prestamos, Bitacora
 
 # ---------- Helpers de sesión / roles ----------
-def _is_logged(request):
-    return request.session.get("usuario_id") is not None
+def _usuario_autenticado(request):
+    return request.session.get("id_usuario") is not None
 
-def _role(request):
-    # "administrador" | "empleado" (según Roles.nombre)
-    return request.session.get("rol")
+def _obtener_rol_usuario(request):
+    return request.session.get("rol_usuario")
 
-def require_role(*allowed):
-    """
-    Redirige a 'login' si no hay sesión o si el rol no está permitido.
-    """
-    def deco(view):
-        @wraps(view)
-        def wrapper(request, *args, **kwargs):
-            if not _is_logged(request):
-                return redirect("login")
-            if _role(request) not in allowed:
-                return redirect("login")
-            return view(request, *args, **kwargs)
-        return wrapper
-    return deco
-
-def _map_front_rol(rol_front: str) -> str:
-    """
-    Mapea el valor del <select> del form a Roles.nombre.
-    Acepta: 'admin' -> 'administrador', 'empleado' -> 'empleado'.
-    """
-    if rol_front in ("admin", "administrador"):
-        return "administrador"
-    if rol_front == "empleado":
-        return "empleado"
-    return ""
-
+def requerir_rol(*roles_permitidos):
+    """Redirige a login si no hay sesión o si el rol no está permitido."""
+    def decorador(vista):
+        @wraps(vista)
+        def envoltura(request, *args, **kwargs):
+            if not _usuario_autenticado(request):
+                return redirect("inicio_sesion")
+            if _obtener_rol_usuario(request) not in roles_permitidos:
+                return redirect("inicio_sesion")
+            return vista(request, *args, **kwargs)
+        return envoltura
+    return decorador
 
 # ---------- Login / Logout (empleados/admin) ----------
+def _redirigir_segun_rol(rol):
+    if rol=="administrador":
+        return redirect("panel_administrador")
+    else :
+        return redirect('panel_bibliotecario')
+    
+    
+
 @csrf_protect
-def login_view(request):
-    # Si ya tiene sesión, lo mandamos a su panel
-    if _is_logged(request):
-        return redirect("admin_home" if _role(request) == "administrador" else "empleado_home")
-
-    ctx = {"error": None}
+def iniciar_sesion_empleado(request):
+    if _usuario_autenticado(request):
+        rol_actual = _obtener_rol_usuario(request)
+        if rol_actual == "administrador":
+            return redirect("panel_administrador")
+        else:
+            return redirect("panel_bibliotecario")
+    
+    contexto = {"error": None}
     if request.method == "POST":
-        email = request.POST.get("email", "").strip()
-        password = request.POST.get("password", "")
-        rol_front = request.POST.get("rol", "")
-        remember = request.POST.get("remember", "")
+        correo = request.POST.get("email", "").strip()
+        contrasena = request.POST.get("password", "")
+        rol_formulario = request.POST.get("rol", "")
+        recordar_sesion = request.POST.get("remember", "")
 
-        if not email or not password or not rol_front:
-            ctx["error"] = "Completa correo, contraseña y rol."
-            return render(request, "seguridad/login_empleados.html", ctx)
+        if not correo or not contrasena or not rol_formulario:
+            contexto["error"] = "Completa correo, contraseña y rol."
+            return render(request, "seguridad/login_empleados.html", contexto)
 
-        rol_db = _map_front_rol(rol_front)
-        if not rol_db:
-            ctx["error"] = "Rol inválido."
-            return render(request, "seguridad/login_empleados.html", ctx)
+        mapeo_roles = {
+            "admin": "administrador",
+            "bibliotecario": "bibliotecario"
+        }
+        rol_bd = mapeo_roles.get(rol_formulario)
+        
+        if not rol_bd:
+            contexto["error"] = "Rol inválido."
+            return render(request, "seguridad/login_empleados.html", contexto)
 
         try:
-            user = Usuarios.objects.select_related("rol").get(
-                email=email, rol__nombre=rol_db, estado="activo"
+            usuario = Usuarios.objects.select_related("rol").get(
+                email=correo, rol__nombre=rol_bd, estado="activo"
             )
         except Usuarios.DoesNotExist:
-            ctx["error"] = "Credenciales incorrectas. Intenta nuevamente."
-            return render(request, "seguridad/login_empleados.html", ctx)
+            contexto["error"] = "Credenciales incorrectas. Intenta nuevamente."
+            return render(request, "seguridad/login_empleados.html", contexto)
 
-        # Soporta hash y texto plano (temporal)
-        clave_db = user.clave or ""
-        if clave_db.startswith(("pbkdf2_", "argon2$", "bcrypt$")):
-            ok = check_password(password, clave_db)
+        # Verificar contraseña
+        contrasena_bd = usuario.clave or ""
+        if contrasena_bd.startswith(("pbkdf2_", "argon2$", "bcrypt$")):
+            coincide = check_password(contrasena, contrasena_bd)
         else:
-            ok = (password == clave_db)
+            coincide = (contrasena == contrasena_bd)
 
-        if not ok:
-            ctx["error"] = "Credenciales incorrectas. Intenta nuevamente."
-            return render(request, "seguridad/login_empleados.html", ctx)
+        if not coincide:
+            contexto["error"] = "Credenciales incorrectas. Intenta nuevamente."
+            return render(request, "seguridad/login_empleados.html", contexto)
 
-        # Login OK: guardamos mínimos en sesión
-        request.session["usuario_id"] = user.id
-        request.session["usuario_email"] = user.email
-        request.session["rol"] = user.rol.nombre  # "administrador" | "empleado"
-        # 14 días si marcó "Recordar sesión"
-        request.session.set_expiry(60 * 60 * 24 * 14 if remember == "on" else 0)
+        # Login exitoso
+        request.session["id_usuario"] = usuario.id
+        request.session["correo_usuario"] = usuario.email
+        request.session["rol_usuario"] = usuario.rol.nombre
+        request.session.set_expiry(60 * 60 * 24 * 14 if recordar_sesion == "on" else 0)
 
-        return redirect("admin_home" if user.rol.nombre == "administrador" else "empleado_home")
+        if usuario.rol.nombre == "administrador":
+            return redirect("panel_administrador")
+        else:
+            return redirect("panel_bibliotecario")
 
-    return render(request, "seguridad/login_empleados.html", ctx)
+    return render(request, "seguridad/login_empleados.html", contexto)
 
-
-def logout_view(request):
-    """
-    Versión corta por compatibilidad, si la estabas usando.
-    """
-    return cerrar_sesion(request)
-
+def cerrar_sesion_empleado(request):
+    request.session.flush()
+    return redirect("inicio_sesion")
 
 # ---------- Paneles ----------
-@require_role("administrador")
-def admin_home(request):
+@requerir_rol("administrador")
+def panel_administrador(request):
     try:
-        current_user = Usuarios.objects.select_related("rol").get(
-            id=request.session.get("usuario_id")
+        usuario_actual = Usuarios.objects.select_related("rol").get(
+            id=request.session.get("id_usuario")
         )
     except Usuarios.DoesNotExist:
-        return redirect("logout")
+        return redirect("cerrar_sesion")
 
     total_libros = Libros.objects.count()
+    
     empleados_activos = Usuarios.objects.filter(
-        rol__nombre="empleado", estado="activo"
+        rol__nombre__in=["administrador", "bibliotecario"], 
+        estado__iexact="activo"
     ).count()
-    hoy = timezone.localdate()
-    alertas = Prestamos.objects.filter(
-        fecha_devolucion__isnull=True, fecha_fin__lt=hoy
-    ).count()
+    
     empleados = Usuarios.objects.select_related("rol").filter(
-        rol__nombre="empleado"
-    ).order_by("id")
+        rol__nombre__in=["administrador", "bibliotecario"]
+    ).order_by("-fecha_creacion")
 
-    ctx = {
-        "current_user": current_user,
+    contexto = {
+        "usuario_actual": usuario_actual,
         "total_libros": total_libros,
-        "ventas_mensuales": None,  # aún no hay tabla de ventas
+        "ventas_mensuales": None,
         "empleados_activos": empleados_activos,
-        "alertas": alertas,
         "empleados": empleados,
     }
-    return render(request, "seguridad/admin_home.html", ctx)
+    return render(request, "seguridad/admin_home.html", contexto)
+
+@requerir_rol("bibliotecario")
+def panel_bibliotecario(request):
+    try:
+        usuario_actual = Usuarios.objects.select_related("rol").get(
+            id=request.session.get("id_usuario")
+        )
+    except Usuarios.DoesNotExist:
+        return redirect("cerrar_sesion")
+
+    total_libros = Libros.objects.count()
+    prestamos_activos = Prestamos.objects.filter(estado="activo").count()
+    
+    hoy = timezone.localdate()
+    prestamos_vencidos = Prestamos.objects.filter(
+        fecha_devolucion__isnull=True, 
+        fecha_fin__lt=hoy
+    ).count()
+
+    contexto = {
+        "usuario_actual": usuario_actual,
+        "total_libros": total_libros,
+        "prestamos_activos": prestamos_activos,
+        "prestamos_vencidos": prestamos_vencidos,
+    }
+    return render(request, "seguridad/bibliotecario_home.html", contexto)
 
 
-@require_role("empleado")
-def empleado_home(request):
-    return render(request, "seguridad/empleado_home.html")
-
-
-# ---------- Alta de empleados ----------
-@require_role("administrador")
+@requerir_rol("administrador")
 @csrf_protect
-def crear_empleado(request):
-    """
-    Crea usuarios con rol 'administrador' o 'empleado'.
-    """
-    ctx = {"ok": None, "error": None}
+def registrar_empleado(request):
+    
+    roles_disponibles = [
+        {"nombre_formulario": "admin", "nombre_bd": "administrador", "nombre_mostrar": "Administrador"},
+        {"nombre_formulario": "bibliotecario", "nombre_bd": "bibliotecario", "nombre_mostrar": "Bibliotecario"},
+    ]
+    
+    contexto = {
+        "exito": None, 
+        "error": None,
+        "roles": roles_disponibles,
+        "usuario_actual": Usuarios.objects.get(id=request.session.get("id_usuario"))
+    }
 
     if request.method == "POST":
-        nombre_completo = request.POST.get("nombre", "").strip()
-        email = request.POST.get("email", "").strip()
-        clave = request.POST.get("clave", "")
-        rol_front = request.POST.get("rol", "")
+        nombre = request.POST.get("nombre", "").strip().lower()
+        apellido = request.POST.get("apellido", "").strip().lower()
+        correo = request.POST.get("email", "").strip()
+        contrasena = request.POST.get("clave", "")
+        rol_formulario = request.POST.get("rol", "")
         estado = request.POST.get("estado", "activo")
 
-        if not (nombre_completo and email and clave and rol_front):
-            ctx["error"] = "Completa nombre, email, clave y rol."
-            return render(request, "seguridad/registrar_empleados.html", ctx)
+        # Validaciones
+        if not all([nombre, apellido, correo, contrasena, rol_formulario]):
+            contexto["error"] = "Completa todos los campos obligatorios."
+            return render(request, "seguridad/registrar_empleados.html", contexto)
 
-        partes = nombre_completo.split()
-        nombre = partes[0]
-        apellido = " ".join(partes[1:]) if len(partes) > 1 else ""
+        if len(contrasena) < 8:
+            contexto["error"] = "La contraseña debe tener al menos 8 caracteres."
+            return render(request, "seguridad/registrar_empleados.html", contexto)
 
-        rol_db = _map_front_rol(rol_front)
-        if rol_db not in ("administrador", "empleado"):
-            ctx["error"] = "Rol inválido."
-            return render(request, "seguridad/registrar_empleados.html", ctx)
+        # Mapear rol formulario a base de datos
+        mapeo_roles = {"admin": "administrador", "bibliotecario": "bibliotecario"}
+        rol_bd = mapeo_roles.get(rol_formulario)
+        
+        if not rol_bd:
+            contexto["error"] = "Rol inválido."
+            return render(request, "seguridad/registrar_empleados.html", contexto)
 
         try:
-            rol_obj = Roles.objects.get(nombre=rol_db)
+            objeto_rol = Roles.objects.get(nombre=rol_bd)
         except Roles.DoesNotExist:
-            ctx["error"] = "No existe el rol seleccionado. Crea 'administrador' y 'empleado' en la tabla Roles."
-            return render(request, "seguridad/registrar_empleados.html", ctx)
+            contexto["error"] = f"No existe el rol '{rol_bd}' en la base de datos."
+            return render(request, "seguridad/registrar_empleados.html", contexto)
 
-        if Usuarios.objects.filter(email=email).exists():
-            ctx["error"] = "Ya existe un usuario con ese correo."
-            return render(request, "seguridad/registrar_empleados.html", ctx)
+        if Usuarios.objects.filter(email=correo).exists():
+            contexto["error"] = "Ya existe un usuario con ese correo."
+            return render(request, "seguridad/registrar_empleados.html", contexto)
 
-        Usuarios.objects.create(
-            rol=rol_obj,
-            nombre=nombre,
-            apellido=apellido,
-            email=email,
-            clave=make_password(clave),  # guarda hash
-            estado=estado,
-        )
-        ctx["ok"] = f"Empleado creado: {email}"
-        return render(request, "seguridad/registrar_empleados.html", ctx)
+        # Crear el usuario
+        try:
+            Usuarios.objects.create(
+                rol=objeto_rol,
+                nombre=nombre,
+                apellido=apellido,
+                email=correo,
+                clave=make_password(contrasena),
+                estado=estado,
+                fecha_creacion=timezone.localtime()
+            )
 
-    return render(request, "seguridad/registrar_empleados.html", ctx)
+            Bitacora.objects.create(
+                usuario=contexto["usuario_actual"], 
+                accion=f"REGISTRO EMPLEADO: {correo} como {rol_bd}",
+                fecha=timezone.now()
+            )
+
+            contexto["exito"] = f"Empleado {nombre} {apellido} creado exitosamente."
+        
+            
+        except Exception as error:
+            contexto["error"] = f"Error al crear el usuario: {str(error)}"
+
+    return render(request, "seguridad/registrar_empleados.html", contexto)
+
+@requerir_rol("bibliotecario")
+
+def inventario(request):
+
+    usuario_actual = Usuarios.objects.select_related("rol").get(
+    id=request.session.get("id_usuario"))
+
+    
+    contexto = {
+        "usuario_actual": usuario_actual
+    }
 
 
-# ---------- Compat con nombres usados en urls ----------
-def inicio_sesion(request):
-    """Alias si alguna plantilla aún llama a 'inicio_sesion'."""
-    return render(request, "seguridad/login_empleados.html")
-
-
-def cerrar_sesion(request):
-    """
-    Cierra la sesión y limpia cualquier flag custom, luego vuelve al inicio público.
-    """
-    auth_logout(request)  # Django auth logout
-    for key in ("empleado_id", "usuario_id", "current_user_id", "rol", "is_admin", "usuario_email"):
-        request.session.pop(key, None)
-
-    # Redirige a la portada pública
-    try:
-        return redirect("inicio")  # definido en biblio.urls
-    except Exception:
-        return redirect("/")       # fallback
+    return render(request, "seguridad/inventario.html", contexto)

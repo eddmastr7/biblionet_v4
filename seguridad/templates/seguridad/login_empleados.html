@@ -10,6 +10,40 @@
   <link rel="stylesheet" href="{% static 'css/login_empleados.css' %}">
 </head>
 <body>
+  <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'inicio' %}">
+                <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" width="60" class="me-2 brand-logo">
+                <span class="brand-text">BiblioNet</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarPrincipal" aria-controls="navbarPrincipal"
+                    aria-expanded="false" aria-label="Menú de navegación">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse justify-content-end" id="navbarPrincipal">
+                <ul class="navbar-nav me-4">
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="{% url 'inicio' %}">Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="{% url 'catalogo' %}">Catálogo</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="{% url 'acerca_de' %}">Acerca de</a>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center">
+                    <a href="{% url 'inicio_sesion_cliente' %}" class="btn btn-outline-light btn-nav me-2">Iniciar sesión</a>
+                    <a href="{% url 'registro_cliente' %}" class="btn btn-accent">Registrarse</a>
+                </div>
+            </div>
+        </div>
+    </nav>
   <main class="login-container d-flex align-items-center justify-content-center min-vh-100">
     <div class="login-card shadow-lg">
       <div class="text-center mb-4">
@@ -42,7 +76,7 @@
           <select id="rol" name="rol" class="form-select" required>
             <option value="">Seleccionar rol</option>
             <option value="admin">Administrador</option>
-            <option value="empleado">Empleado</option>
+            <option value="bibliotecario">bibliotecario</option>
           </select>
         </div>
 
@@ -69,8 +103,65 @@
     </div>
   </main>
 
-  <footer class="text-center py-3 text-muted small">
-    © 2025 BiblioNet · Todos los derechos reservados
-  </footer>
+  <!-- Footer -->
+    <footer class="footer-custom">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <div class="footer-brand">
+                        <img src="{% static 'imagenes/logo.jpg' %}" alt="BiblioNet" width="40" class="me-2">
+                        <span class="footer-brand-text">BiblioNet</span>
+                    </div>
+                    <p class="footer-description">
+                        Tu biblioteca digital de confianza con miles de títulos disponibles.
+                        Llevamos la magia de la lectura a tu pantalla.
+                    </p>
+                </div>
+
+                <div class="col-lg-2 col-md-4 mb-4">
+                    <h5 class="footer-title">Enlaces</h5>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'inicio' %}">Inicio</a></li>
+                        <li><a href="{% url 'catalogo' %}">Catálogo</a></li>
+                        <li><a class="active" href="{% url 'acerca_de' %}">Acerca de</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-3 col-md-4 mb-4">
+                    <h5 class="footer-title">Categorías</h5>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'catalogo' %}">Fantasía</a></li>
+                        <li><a href="{% url 'catalogo' %}?q=terror">Terror</a></li>
+                        <li><a href="{% url 'catalogo' %}?q=suspenso">Suspenso</a></li>
+                        <li><a href="{% url 'catalogo' %}?q=romance">Romance</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-3 col-md-4 mb-4">
+                    <h5 class="footer-title">Contacto</h5>
+                    <div class="footer-contact">
+                        <p>📧 info@biblionet.com</p>
+                        <p>📞 +1 234 567 890</p>
+                        <p>📍 Calle Libros 123, Ciudad</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <p class="copyright">&copy; 2025 BiblioNet. Todos los derechos reservados.</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <div class="footer-legal">
+                            <a href="#">Política de privacidad</a>
+                            <a href="#">Términos de servicio</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
 </body>
 </html>

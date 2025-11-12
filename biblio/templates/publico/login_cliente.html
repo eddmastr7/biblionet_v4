@@ -32,8 +32,8 @@
         </ul>
 
         <div class="d-flex align-items-center">
-          <a href="{% url 'login_cliente' %}" class="btn btn-outline-light btn-nav me-2">Iniciar sesión</a>
-          <a href="{% url 'registro' %}" class="btn btn-accent">Registrarse</a>
+          <a href="{% url 'inicio_sesion_cliente' %}" class="btn btn-outline-light btn-nav me-2">Iniciar sesión</a>
+          <a href="{% url 'registro_cliente' %}" class="btn btn-accent">Registrarse</a>
         </div>
       </div>
     </div>
@@ -46,25 +46,32 @@
         <div class="col-lg-6 col-xl-4">
           <div class="login-card">
             <div class="login-header">
+              <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" width="90" class="mb-2 rounded">
               <h1 class="login-title">Bienvenido a BiblioNet</h1>
               <p class="login-subtitle">Inicia sesión para continuar</p>
             </div>
 
             {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
 
-            <form class="login-form" method="post" action="{% url 'login_cliente' %}">
+            <form class="login-form" method="post" action="{% url 'inicio_sesion_cliente' %}">
               {% csrf_token %}
 
               <!-- Correo -->
               <div class="form-group">
-                <label for="email" class="form-label">Correo Electrónico</label>
-                <input type="email" class="form-control form-control-lg" id="email" name="email" placeholder="tu@correo.com" required>
+                <label for="email" class="form-label fw-semibold">Correo Electrónico</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="fas fa-user"></i></span>
+                  <input type="email" name="email" class="form-control" placeholder="nombre@gmail.com" required>
+                </div>
               </div>
 
               <!-- Contraseña -->
               <div class="form-group">
-                <label for="password" class="form-label">Contraseña</label>
-                <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="Ingresa tu contraseña" required>
+                <label for="password" class="form-label fw-semibold">Contraseña</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                  <input type="password" name="password" class="form-control" placeholder="********" required>
+                </div>
               </div>
 
               <!-- Recordar -->
@@ -87,10 +94,10 @@
               <!-- Enlaces -->
               <div class="text-center">
                 <p class="login-register-link">
-                  ¿No tienes una cuenta? <a href="{% url 'registro' %}" class="text-link">Regístrate aquí</a>
+                  ¿No tienes una cuenta? <a href="{% url 'registro_cliente' %}" class="text-link">Regístrate aquí</a>
                 </p>
                 <p class="login-register-link">
-                  Ingresar como <a href="{% url 'login' %}" class="text-link">Empleado</a>
+                  Ingresar como <a href="{% url 'inicio_sesion' %}" class="text-link">Empleado</a>
                 </p>
               </div>
             </form>
@@ -123,7 +130,7 @@
         <div class="col-lg-3 col-md-4 mb-4">
           <h5 class="footer-title">Categorías</h5>
           <ul class="footer-links">
-            <li><a href="{% url 'fantasia' %}">Fantasía</a></li>
+            <li><a href="{% url 'catalogo' %}">Fantasía</a></li>
             <li><a href="{% url 'catalogo' %}?q=terror">Terror</a></li>
             <li><a href="{% url 'catalogo' %}?q=suspenso">Suspenso</a></li>
             <li><a href="{% url 'catalogo' %}?q=romance">Romance</a></li>

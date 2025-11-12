@@ -6,6 +6,83 @@
     --text-light: #6c757d;
 }
 
+/* ===== NAVBAR ===== */
+.navbar-custom {
+background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+padding: 1rem 0;
+box-shadow: var(--shadow);
+position: sticky;
+top: 0;
+z-index: 1000;
+}
+
+.brand-logo {
+border-radius: 8px;
+transition: transform 0.3s ease;
+}
+
+.brand-logo:hover {
+transform: scale(1.1);
+}
+
+.brand-text {
+font-size: 1.5rem;
+font-weight: 700;
+color: white;
+}
+
+.nav-link-custom {
+color: rgba(255, 255, 255, 0.9) !important;
+font-weight: 500;
+padding: 0.5rem 1rem !important;
+border-radius: 0.375rem;
+transition: all 0.3s ease;
+position: relative;
+}
+
+.nav-link-custom:hover,
+.nav-link-custom.active {
+color: white !important;
+background-color: rgba(46, 204, 113, 0.2);
+}
+
+.nav-link-custom.active::after {
+content: '';
+position: absolute;
+bottom: 0;
+left: 1rem;
+right: 1rem;
+height: 2px;
+background-color: var(--accent-green);
+}
+
+.btn-nav {
+border-width: 2px;
+font-weight: 600;
+transition: all 0.3s ease;
+}
+
+.btn-nav:hover {
+transform: translateY(-2px);
+}
+
+.btn-accent {
+background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-green-dark) 100%);
+border: none;
+color: white;
+font-weight: 600;
+padding: 0.5rem 1.5rem;
+border-radius: 0.375rem;
+transition: all 0.3s ease;
+}
+
+.btn-accent:hover {
+transform: translateY(-2px);
+box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+color: white;
+}
+
+
 /* Fondo general de la sección */
 .register-section {
     padding: 4rem 0;
@@ -141,6 +218,7 @@
     font-size: 1rem;
 }
 
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     .register-section {
@@ -174,4 +252,40 @@
         font-size: 1rem;
         padding: 0.9rem 1rem;
     }
+}
+
+/* Estilos para validación automática */
+
+.form-control:valid {
+    border-color: #198754 !important;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25) !important;
+}
+
+.form-control:invalid {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+/* Mostrar mensajes de error solo cuando el campo es inválido y fue interactuado */
+.form-control:invalid:focus ~ .invalid-feedback,
+.form-control:invalid:not(:placeholder-shown) ~ .invalid-feedback {
+    display: block;
+}
+
+.form-control:valid ~ .invalid-feedback {
+    display: none;
+}
+
+.invalid-feedback {
+    display: none;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #dc3545;
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: var(--text-light);
+    margin-top: 0.25rem;
 }

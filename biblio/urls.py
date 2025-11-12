@@ -4,9 +4,12 @@ from . import views
 urlpatterns = [
     path("", views.inicio, name="inicio"),
     path("catalogo/", views.catalogo, name="catalogo"),
-    path("catalogo/fantasia/", views.catalogo_fantasia, name="fantasia"),
+    
     path("acerca-de/", views.acerca_de, name="acerca_de"),
 
-    path("login/cliente/", views.login_cliente, name="login_cliente"),
-    path("registro/", views.registro_cliente, name="registro"),  # 👈 ESTA
+    path("nicio_sesion_cliente/cliente/", views.inicio_sesion_cliente, name="inicio_sesion_cliente"),
+    path("registro/", views.registro_cliente, name="registro_cliente"),
+    path('pantalla_inicio/cliente/', views.pantalla_inicio_cliente, name='pantalla_inicio_cliente'), 
+    path('cerrar_sesion_client/cliente/', views.cerrar_sesion_cliente, name='cerrar_sesion_cliente'),
+
 ]

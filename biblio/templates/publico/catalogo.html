@@ -37,8 +37,8 @@
         </ul>
 
         <div class="d-flex align-items-center">
-          <a href="{% url 'login_cliente' %}" class="btn btn-outline-light btn-nav me-2">Iniciar sesión</a>
-          <a href="{% url 'registro' %}" class="btn btn-accent">Registrarse</a>
+          <a href="{% url 'inicio_sesion_cliente' %}" class="btn btn-outline-light btn-nav me-2">Iniciar sesión</a>
+          <a href="{% url 'registro_cliente' %}" class="btn btn-accent">Registrarse</a>
         </div>
       </div>
     </div>
@@ -75,7 +75,7 @@
             <label class="filter-label">Categorías</label>
             <select class="form-select filter-select" onchange="window.location.href=this.value;">
               <option value="{% url 'catalogo' %}">Todas las categorías</option>
-              <option value="{% url 'fantasia' %}">Fantasía</option>
+              <option value="{% url 'catalogo' %}">Fantasía</option>
             </select>
           </div>
         </div>
@@ -210,7 +210,7 @@
         <div class="col-lg-3 col-md-4 mb-4">
           <h5 class="footer-title">Categorías</h5>
           <ul class="footer-links">
-            <li><a href="{% url 'fantasia' %}">Fantasía</a></li>
+            <li><a href="{% url 'catalogo' %}">Fantasía</a></li>
             <li><a href="{% url 'catalogo' %}?q=terror">Terror</a></li>
             <li><a href="{% url 'catalogo' %}?q=suspenso">Suspenso</a></li>
             <li><a href="{% url 'catalogo' %}?q=romance">Romance</a></li>

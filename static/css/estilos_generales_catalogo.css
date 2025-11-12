@@ -23,7 +23,7 @@ color: var(--text-dark);
 line-height: 1.6;
 }
 
-/* ===== NAVBAR MEJORADO - AZUL Y VERDE ===== */
+/* ===== NAVBAR ===== */
 .navbar-custom {
 background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
 padding: 1rem 0;

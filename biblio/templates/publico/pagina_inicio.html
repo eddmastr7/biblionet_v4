@@ -37,8 +37,8 @@
         </ul>
 
         <div class="d-flex align-items-center">
-          <a href="{% url 'login_cliente' %}" class="btn btn-outline-light btn-nav me-2">Iniciar sesión</a>
-          <a href="{% url 'registro' %}" class="btn btn-accent">Registrarse</a>
+          <a href="{% url 'inicio_sesion_cliente' %}" class="btn btn-outline-light btn-nav me-2">Iniciar sesión</a>
+          <a href="{% url 'registro_cliente' %}" class="btn btn-accent">Registrarse</a>
         </div>
       </div>
     </div>
@@ -62,10 +62,10 @@
               </button>
             </div>
             <div class="search-suggestions">
-              <a href="{% url 'fantasia' %}" class="suggestion-tag">Fantasía</a>
-              <a href="{% url 'catalogo' %}?q=romance" class="suggestion-tag">Romance</a>
-              <a href="{% url 'catalogo' %}?q=misterio" class="suggestion-tag">Misterio</a>
-              <a href="{% url 'catalogo' %}?q=ciencia+ficcion" class="suggestion-tag">Ciencia Ficción</a>
+              <a href="{% url 'catalogo' %}" class="suggestion-tag">Fantasía</a>
+              <a href="{% url 'catalogo' %}" class="suggestion-tag">Romance</a>
+              <a href="{% url 'catalogo' %}" class="suggestion-tag">Misterio</a>
+              <a href="{% url 'catalogo' %}" class="suggestion-tag">Ciencia Ficción</a>
             </div>
           </form>
         </div>
@@ -93,7 +93,7 @@
 
       <div class="row g-4">
         <div class="col-md-6 col-lg-4">
-          <a href="{% url 'fantasia' %}" class="category-card-link">
+          <a href="#" class="category-card-link">
             <div class="category-card fantasy-card">
               <div class="category-icon">✨</div>
               <h3 class="category-title">Fantasía</h3>
@@ -105,7 +105,7 @@
 
         <!-- Puedes duplicar para otras categorías apuntando a catalogo?q=... -->
         <div class="col-md-6 col-lg-4">
-          <a href="{% url 'catalogo' %}?q=terror" class="category-card-link">
+          <a href="{% url 'catalogo' %}" class="category-card-link">
             <div class="category-card horror-card">
               <div class="category-icon">👻</div>
               <h3 class="category-title">Terror</h3>
@@ -116,7 +116,7 @@
         </div>
 
         <div class="col-md-6 col-lg-4">
-          <a href="{% url 'catalogo' %}?q=romance" class="category-card-link">
+          <a href="{% url 'catalogo' %}" class="category-card-link">
             <div class="category-card romance-card">
               <div class="category-icon">💖</div>
               <h3 class="category-title">Romance</h3>
@@ -154,10 +154,10 @@
         <div class="col-lg-3 col-md-4 mb-4">
           <h5 class="footer-title">Categorías</h5>
           <ul class="footer-links">
-            <li><a href="{% url 'fantasia' %}">Fantasía</a></li>
-            <li><a href="{% url 'catalogo' %}?q=terror">Terror</a></li>
-            <li><a href="{% url 'catalogo' %}?q=suspenso">Suspenso</a></li>
-            <li><a href="{% url 'catalogo' %}?q=romance">Romance</a></li>
+            <li><a href="{% url 'catalogo' %}">Fantasía</a></li>
+            <li><a href="{% url 'catalogo' %}">Terror</a></li>
+            <li><a href="{% url 'catalogo' %}">Suspenso</a></li>
+            <li><a href="{% url 'catalogo' %}">Romance</a></li>
           </ul>
         </div>
         <div class="col-lg-3 col-md-4 mb-4">

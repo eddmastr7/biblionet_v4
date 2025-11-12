@@ -56,36 +56,46 @@
 }
 
 
+.btn-custom-1 {
+    background: rgb(109, 160, 124);
+    border: none;
+    color: white;
+}
+
+
+
 .dropdown-toggle {
     border: none !important;
     background: transparent !important;
 
 }
 
+        
 .dropdown-toggle::after {
     margin-left: 0.5rem;
 }
 
+        
 .dropdown-menu {
     border: none;
     box-shadow: var(--shadow-hover);
     border-radius: 0.5rem;
-
 }
 
 .dropdown-item {
     padding: 0.5rem 1rem;
     transition: all 0.3s ease;
+
 }
 
 .dropdown-item:hover {
     background-color: rgba(46, 204, 113, 0.1);
+
 }
 
         /* Botones de historial */
 .history-buttons {
     margin-bottom: 2rem;
-        
 }
 
 .btn-history {
@@ -109,15 +119,13 @@
     color: white;
 }
 
-
-/* Estilos para la tabla */
+        /* Estilos para la tabla */
 .book-cover {
     width: 50px;
     height: 65px;
     object-fit: cover;
     background-color: #f8f9fa;
     border: 1px solid #dee2e6;
-
 }
 
 .table th {
@@ -152,3 +160,4 @@
    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-green) 100%);
     
 }
+

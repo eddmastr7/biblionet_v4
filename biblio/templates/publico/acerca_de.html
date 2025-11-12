@@ -46,8 +46,8 @@
                 </ul>
 
                 <div class="d-flex align-items-center">
-                    <a href="{% url 'login_cliente' %}" class="btn btn-outline-light btn-nav me-2">Iniciar sesión</a>
-                    <a href="{% url 'registro' %}" class="btn btn-accent">Registrarse</a>
+                    <a href="{% url 'inicio_sesion_cliente' %}" class="btn btn-outline-light btn-nav me-2">Iniciar sesión</a>
+                    <a href="{% url 'registro_cliente' %}" class="btn btn-accent">Registrarse</a>
                 </div>
             </div>
         </div>
@@ -80,9 +80,7 @@
                     <h2 class="section-title">Nuestra Historia</h2>
                     <p class="story-text">
                         Fundada en 2025, BiblioNet nació de la pasión por hacer la literatura
-                        accesible para todos. Lo que comenzó como un pequeño proyecto universitario
-                        se ha convertido en una de las plataformas digitales de lectura más importantes.
-                    </p>
+                        accesible para todos.
                     <p class="story-text">
                         Hoy contamos con más de 50 títulos en nuestro catálogo y una comunidad
                         de más de 100 lectores activos que comparten su amor por los libros.
@@ -91,15 +89,15 @@
                     <div class="stats-container mt-4">
                         <div class="row">
                             <div class="col-4 text-center">
-                                <div class="stat-number">50K+</div>
+                                <div class="stat-number"></div>
                                 <div class="stat-label">Libros</div>
                             </div>
                             <div class="col-4 text-center">
-                                <div class="stat-number">100K+</div>
+                                <div class="stat-number">{{clientes_activos}}</div>
                                 <div class="stat-label">Lectores</div>
                             </div>
                             <div class="col-4 text-center">
-                                <div class="stat-number">15+</div>
+                                <div class="stat-number"></div>
                                 <div class="stat-label">Países</div>
                             </div>
                         </div>
@@ -126,7 +124,7 @@
                         </div>
                         <h3 class="mission-title">Nuestra Misión</h3>
                         <p class="mission-text">
-                            Democratizar el acceso a la literatura y fomentar el hábito de la lectura
+                            Facilitar el acceso a la literatura y fomentar el hábito de la lectura
                             mediante una plataforma digital innovadora, accesible y de alta calidad
                             para todos los hispanohablantes.
                         </p>
@@ -210,40 +208,59 @@
                 <div class="col-md-4 mb-4">
                     <div class="team-card text-center">
                         <div class="team-image">
-                            <img src="#" alt="María González" class="team-photo">
+                            <img src="#" alt="Eduardo" class="team-photo">
                         </div>
-                        <h4 class="team-name">María González</h4>
-                        <p class="team-position">Directora General</p>
+                        <h4 class="team-name">Eduardo</h4>
+                        <p class="team-position"></p>
                         <p class="team-bio">
-                            Apasionada por la literatura con más de 10 años de experiencia
-                            en la industria editorial digital.
+                            
                         </p>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
                     <div class="team-card text-center">
                         <div class="team-image">
-                            <img src="#" alt="Carlos Rodríguez" class="team-photo">
+                            <img src="#" alt="Nancy Carrillo" class="team-photo">
                         </div>
-                        <h4 class="team-name">Carlos Rodríguez</h4>
-                        <p class="team-position">Jefe de Tecnología</p>
+                        <h4 class="team-name">Nancy Carrillo</h4>
+                        <p class="team-position"></p>
                         <p class="team-bio">
-                            Ingeniero de software especializado en plataformas digitales
-                            y experiencias de usuario.
+                            
                         </p>
                     </div>
                 </div>
                 <div class="col-md-4 mb-4">
                     <div class="team-card text-center">
                         <div class="team-image">
-                            <img src="#" alt="Ana Martínez" class="team-photo">
+                            <img src="#" alt="Jairo Rausales" class="team-photo">
                         </div>
-                        <h4 class="team-name">Ana Martínez</h4>
-                        <p class="team-position">Editora Principal</p>
+                        <h4 class="team-name">Jairo Raudales</h4>
+                        <p class="team-position"></p>
                         <p class="team-bio">
-                            Crítica literaria y editora con un ojo excepcional para descubrir
-                            talentos emergentes.
+                            
                         </p>
+                    </div>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-md-4 mb-4">
+                        <div class="team-card text-center">
+                            <div class="team-image">
+                                <img src="#" alt="Lester" class="team-photo">
+                            </div>
+                            <h4 class="team-name">Lester</h4>
+                            <p class="team-position"></p>
+                            <p class="team-bio"></p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="team-card text-center">
+                            <div class="team-image">
+                                <img src="#" alt="Darwin" class="team-photo">
+                            </div>
+                            <h4 class="team-name">Darwin</h4>
+                            <p class="team-position"></p>
+                            <p class="team-bio"></p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -277,7 +294,7 @@
                 <div class="col-lg-3 col-md-4 mb-4">
                     <h5 class="footer-title">Categorías</h5>
                     <ul class="footer-links">
-                        <li><a href="{% url 'fantasia' %}">Fantasía</a></li>
+                        <li><a href="{% url 'catalogo' %}">Fantasía</a></li>
                         <li><a href="{% url 'catalogo' %}?q=terror">Terror</a></li>
                         <li><a href="{% url 'catalogo' %}?q=suspenso">Suspenso</a></li>
                         <li><a href="{% url 'catalogo' %}?q=romance">Romance</a></li>
