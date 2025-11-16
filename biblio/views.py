@@ -4,35 +4,72 @@ from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
 from django.db import transaction
-from biblio.models import Usuarios, Roles, Clientes
+from biblio.models import Usuarios, Roles, Clientes, Libros
 from django.views.decorators.csrf import csrf_protect
+from django.core.paginator import Paginator
 
 def inicio(request):
     # Renderiza tu plantilla: biblio/templates/publico/pagina_inicio.html
     return render(request, "publico/pagina_inicio.html")
 
+from django.core.paginator import Paginator
+from django.shortcuts import render
+from biblio.models import Libros
+
 def catalogo(request):
-    # Soporta búsqueda ?q=...
-    q = (request.GET.get("q") or "").strip().lower()
+    q = (request.GET.get("q") or "").strip()
+    categoria = (request.GET.get("categoria") or "").strip()
+    estado = (request.GET.get("estado") or "").strip()
+    orden = (request.GET.get("orden") or "recientes").strip()
 
-    # Datos de ejemplo mientras conectas a la BD
-    base = [
-        {"titulo": " ", "autor": " ", "descripcion": " ", "disponible": True,  "imagen_url": ""},
-        {"titulo": " ", "autor": " ", "descripcion": " ", "disponible": False, "imagen_url": ""},
-        {"titulo": " ", "autor": " ", "descripcion": " ", "disponible": True,  "imagen_url": ""},
-    ]
+    # Base
+    libros_qs = Libros.objects.all()
 
+    # Buscar por título o autor
     if q:
-        libros = [l for l in base if q in l["titulo"].lower() or q in l["autor"].lower() or q in (l["descripcion"] or "").lower()]
+        libros_qs = (
+            libros_qs.filter(titulo__icontains=q) |
+            libros_qs.filter(autor__icontains=q)
+        ).distinct()
+
+    # Filtrar por categoría (sin perder lo anterior)
+    if categoria:
+        libros_qs = libros_qs.filter(categoria__icontains=categoria)
+
+    # Filtrar por estado usando stock_total directo
+    if estado == "disponible":
+        libros_qs = libros_qs.filter(stock_total__gt=0)
+    elif estado == "prestado":
+        libros_qs = libros_qs.filter(stock_total__lte=0)
+
+    # Orden
+    if orden == "titulo_asc":
+        libros_qs = libros_qs.order_by("titulo")
+    elif orden == "titulo_desc":
+        libros_qs = libros_qs.order_by("-titulo")
+    elif orden == "autor_asc":
+        libros_qs = libros_qs.order_by("autor", "titulo")
+    elif orden == "antiguos":
+        libros_qs = libros_qs.order_by("anio_publicacion", "titulo")
     else:
-        libros = base
+        libros_qs = libros_qs.order_by("-fecha_registro", "titulo")
+
+    paginator = Paginator(libros_qs, 9)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
 
     ctx = {
-        "libros": libros,
-        "total_libros": len(libros),
+        "libros": page_obj.object_list,
+        "page_obj": page_obj,
+        "total_libros": paginator.count,
+        "q": q,
+        "categoria": categoria,
+        "estado": estado,
+        "orden": orden,
     }
-    # biblio/templates/publico/catalogo.html
+
     return render(request, "publico/catalogo.html", ctx)
+
 
 
 def acerca_de(request):

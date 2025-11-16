@@ -63,6 +63,18 @@
             background: var(--primary-blue);
             color: white;
         }
+
+       /* ===== PORTADA EN TARJETAS DEL CATÁLOGO ===== */
+.catalog-cover {
+    width: 100%;           /* que ocupe todo el ancho de la card */
+    height: 350px;         /* alto fijo del contenedor de la imagen */
+    
+    border-top-left-radius: 0.75rem;
+    border-top-right-radius: 0.75rem;
+    display: block;
+}
+
+
     </style>
 </head>
 <body>
@@ -142,13 +154,17 @@
             </div>
 
             <form method="get" class="row g-4 filters-content">
-                <!-- Categoría (demo con Fantasía) -->
+                <!-- Categoría -->
                 <div class="col-md-3">
                     <div class="filter-group">
                         <label class="filter-label">Categorías</label>
-                        <select class="form-select filter-select" onchange="window.location.href=this.value;">
-                            <option value="{% url 'catalogo' %}">Todas las categorías</option>
-                            <option value="{% url 'catalogo' %}">Fantasía</option>
+                        <select class="form-select filter-select" name="categoria">
+                            <option value="" {% if not categoria %}selected{% endif %}>Todas las categorías</option>
+                            <option value="ficcion" {% if categoria == "ficcion" %}selected{% endif %}>Ficción</option>
+                            <option value="ciencia" {% if categoria == "ciencia" %}selected{% endif %}>Ciencia</option>
+                            <option value="historia" {% if categoria == "historia" %}selected{% endif %}>Historia</option>
+                            <option value="biografia" {% if categoria == "biografia" %}selected{% endif %}>Biografía</option>
+                            <option value="misterio" {% if categoria == "misterio" %}selected{% endif %}>Misterio</option>
                         </select>
                     </div>
                 </div>
@@ -184,7 +200,8 @@
                     <div class="filter-group">
                         <label class="filter-label">Buscar</label>
                         <div class="input-group search-group-improved">
-                            <input type="text" class="form-control search-input-improved" name="q" placeholder="Título, autor..." value="{{ q|default:'' }}">
+                            <input type="text" class="form-control search-input-improved" 
+                                   name="q" placeholder="Título, autor..." value="{{ q|default:'' }}">
                             <button class="btn btn-search-improved" type="submit">
                                 <span class="search-icon">🔍</span>
                             </button>
@@ -203,7 +220,15 @@
                     {% for libro in libros %}
                         <div class="col-md-6 col-lg-4">
                             <div class="card h-100 shadow-sm">
-                                <img src="{{ libro.portada|default:'https://via.placeholder.com/200x300?text=Sin+Imagen' }}" class="card-img-top" alt="{{ libro.titulo }}">
+                                
+                                {% if libro.portada %}
+                                <img src="{{ libro.portada.url }}" 
+                                class="card-img-top catalog-cover" alt="{{ libro.titulo }}">
+                                {% else %}
+                                <img src="https://via.placeholder.com/200x300?text=Sin+Imagen"
+                                class="card-img-top catalog-cover" alt="{{ libro.titulo }}">
+                                {% endif %}
+
                                 <div class="card-body d-flex flex-column">
                                     <h5 class="card-title">{{ libro.titulo }}</h5>
                                     <p class="card-text text-muted">{{ libro.autor }}</p>
@@ -212,8 +237,8 @@
                                         {% if libro.anio_publicacion %}{{ libro.anio_publicacion }}{% endif %}
                                     </p>
                                     <div class="mt-auto">
-                                        {% if libro.disponibles|default:0 > 0 %}
-                                            <span class="badge bg-success mb-2">Disponible ({{ libro.disponibles }})</span>
+                                        {% if libro.stock_total|default:0 > 0 %}
+                                            <span class="badge bg-success mb-2">Disponible</span>
                                             <div class="d-grid gap-2">
                                                 <a href="#" class="btn btn-primary">Ver detalles</a>
                                                 {% if user.is_authenticated %}
@@ -262,19 +287,46 @@
             {% if page_obj and page_obj.paginator.num_pages > 1 %}
                 <nav aria-label="Paginación de libros" class="mt-4">
                     <ul class="pagination justify-content-center">
-                        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&estado={{ estado }}&orden={{ orden }}">Anterior</a>
-                        </li>
-
-                        {% for num in page_obj.paginator.page_range %}
-                            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                                <a class="page-link" href="?page={{ num }}&q={{ q }}&estado={{ estado }}&orden={{ orden }}">{{ num }}</a>
+                        <!-- Anterior -->
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if categoria %}&categoria={{ categoria }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">
+                                    Anterior
+                                </a>
                             </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Anterior</span>
+                            </li>
+                        {% endif %}
+
+                        <!-- Números -->
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if q %}&q={{ q }}{% endif %}{% if categoria %}&categoria={{ categoria }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                            {% endif %}
                         {% endfor %}
 
-                        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&estado={{ estado }}&orden={{ orden }}">Siguiente</a>
-                        </li>
+                        <!-- Siguiente -->
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if categoria %}&categoria={{ categoria }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if orden %}&orden={{ orden }}{% endif %}">
+                                    Siguiente
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Siguiente</span>
+                            </li>
+                        {% endif %}
                     </ul>
                 </nav>
             {% endif %}
@@ -396,3 +448,4 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </body>
 </html>
+
