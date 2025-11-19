@@ -53,7 +53,8 @@ jobs:
                 'NAME': os.path.join(os.getcwd(), 'test_db.sqlite3'),
             }
         }
-        ROOT_URLCONF = 'proyecto_biblionet.urls' # Ajusta al nombre de tu proyecto principal
+        # ¡CORRECCIÓN AQUÍ! Se asume que el módulo principal se llama 'biblionet_v2'.
+        ROOT_URLCONF = 'biblionet_v2.urls' 
         INSTALLED_APPS = [
             'django.contrib.admin',
             'django.contrib.auth',
@@ -78,3 +79,5 @@ jobs:
       run: |
         # Ejecuta las pruebas usando el archivo de settings temporal
         python manage.py test biblio --settings=test_settings
+
+        
