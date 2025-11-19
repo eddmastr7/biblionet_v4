@@ -81,7 +81,7 @@ class Libros(models.Model):
     autor = models.CharField(max_length=255)
     categoria = models.CharField(max_length=100, blank=True, null=True)
     editorial = models.CharField(max_length=150, blank=True, null=True)
-    anio_publicacion = models.TextField(blank=True, null=True)  # This field type is a guess.
+    anio_publicacion = models.TextField(blank=True, null=True)
     stock_total = models.IntegerField(blank=True, null=True)
     portada = models.ImageField(upload_to='portadas/', blank=True, null=True)
     fecha_registro = models.DateTimeField(blank=True, null=True)
@@ -149,4 +149,8 @@ class CatalogoPublico(models.Model):
     total_ejemplares = models.IntegerField()
     disponibles = models.IntegerField()
 
-    
+    class Meta:
+        managed = False
+        db_table = 'catalogo_publico'
+
+

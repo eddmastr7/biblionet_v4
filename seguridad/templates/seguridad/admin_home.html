@@ -28,7 +28,12 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="#"><i class="fas fa-user-edit me-2"></i>Mi Perfil</a></li>
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configuración</a></li>
+                        <li>
+    <a class="dropdown-item" href="{% url 'configurar_reglas_prestamo' %}">
+        <i class="fas fa-cog me-2"></i>Configuración de reglas
+    </a>
+</li>
+
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="{% url 'cerrar_sesion' %}"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
                     </ul>
@@ -55,7 +60,12 @@
                         Historial de Préstamos
                     </button>
                 </div>
-
+                <div class="col-md-6 mb-3">
+                    <a href="{% url 'configurar_reglas_prestamo' %}" class="btn w-100 btn-history">
+                        <i class="fas fa-sliders-h me-2"></i>
+                        Configuración de reglas de préstamo
+                    </a>
+                </div>
                 <div class="col-md-6 mb-3">
                     <button class="btn w-100 btn-history">
                         <i class="fas fa-history me-2"></i>

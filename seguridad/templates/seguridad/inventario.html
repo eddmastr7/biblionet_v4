@@ -363,77 +363,85 @@
         </div>
     </div>
 
-    <!-- Modal para editar libro -->
-    <div class="modal fade" id="editarLibroModal" tabindex="-1" aria-labelledby="editarLibroModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editarLibroModalLabel">Editar Libro</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form method="POST" action="" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <input type="hidden" name="editar_libro" value="true">
-                    <input type="hidden" name="libro_id" id="edit_libro_id" value="">
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="edit_isbn" class="form-label">ISBN</label>
-                                <input type="text" class="form-control" id="edit_isbn" name="isbn" 
-                                pattern="^\d{13}$" 
-                                title="El ISBN debe contener exactamente 13 dígitos numéricos sin espacios"
-                                required>
-                                <div class="form-text">Ingrese el código ISBN de 13 dígitos (solo números)</div>
+<!-- Modal para editar libro -->
+<div class="modal fade" id="editarLibroModal" tabindex="-1" aria-labelledby="editarLibroModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editarLibroModalLabel">Editar Libro</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="editar_libro" value="true">
+                <input type="hidden" name="libro_id" id="edit_libro_id" value="">
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- ISBN SOLO LECTURA -->
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_isbn" class="form-label">ISBN</label>
+                            <input
+                                type="text"
+                                class="form-control bg-light"
+                                id="edit_isbn"
+                                value=""
+                                readonly
+                            >
+                            <div class="form-text">
+                                El ISBN es un identificador fijo y no puede modificarse.
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="edit_titulo" class="form-label">Título</label>
-                                <input type="text" class="form-control" id="edit_titulo" name="titulo" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="edit_autor" class="form-label">Autor</label>
-                                <input type="text" class="form-control" id="edit_autor" name="autor" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="edit_categoria" class="form-label">Categoría</label>
-                                <select class="form-select" id="edit_categoria" name="categoria" required>
-                                    <option value="">Seleccionar categoría</option>
-                                    <option value="ficcion">Ficción</option>
-                                    <option value="ciencia">Ciencia</option>
-                                    <option value="historia">Historia</option>
-                                    <option value="biografia">Biografía</option>
-                                    <option value="misterio">Misterio</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="edit_editorial" class="form-label">Editorial</label>
-                                <input type="text" class="form-control" id="edit_editorial" name="editorial" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="edit_anio_publicacion" class="form-label">Año de Publicación</label>
-                                <input type="number" class="form-control" id="edit_anio_publicacion" name="anio_publicacion" min="1900" max="2024" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="edit_stock" class="form-label">Stock</label>
-                                <input type="number" class="form-control" id="edit_stock" name="stock" min="0" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="edit_portada" class="form-label">Portada (JPG, JPEG o PNG)</label>
-                                <input type="file" class="form-control" id="edit_portada" name="portada"
-                                       accept=".jpg,.jpeg,.png">
-                                <div class="form-text">
-                                    Si no seleccionas nada, se mantiene la portada actual.
-                                </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_titulo" class="form-label">Título</label>
+                            <input type="text" class="form-control" id="edit_titulo" name="titulo" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_autor" class="form-label">Autor</label>
+                            <input type="text" class="form-control" id="edit_autor" name="autor" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_categoria" class="form-label">Categoría</label>
+                            <select class="form-select" id="edit_categoria" name="categoria" required>
+                                <option value="">Seleccionar categoría</option>
+                                <option value="ficcion">Ficción</option>
+                                <option value="ciencia">Ciencia</option>
+                                <option value="historia">Historia</option>
+                                <option value="biografia">Biografía</option>
+                                <option value="misterio">Misterio</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_editorial" class="form-label">Editorial</label>
+                            <input type="text" class="form-control" id="edit_editorial" name="editorial" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_anio_publicacion" class="form-label">Año de Publicación</label>
+                            <input type="number" class="form-control" id="edit_anio_publicacion" name="anio_publicacion" min="1900" max="2024" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_stock" class="form-label">Stock</label>
+                            <input type="number" class="form-control" id="edit_stock" name="stock" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_portada" class="form-label">Portada (JPG, JPEG o PNG)</label>
+                            <input type="file" class="form-control" id="edit_portada" name="portada"
+                                   accept=".jpg,.jpeg,.png">
+                            <div class="form-text">
+                                Si no seleccionas nada, se mantiene la portada actual.
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-                    </div>
-                </form>
-            </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
+
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

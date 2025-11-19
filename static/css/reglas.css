@@ -1,0 +1,63 @@
+/* ENCABEZADO */
+.prestamo-header {
+    background: linear-gradient(135deg, #2c5aa0, #27ae60);
+    padding: 25px 30px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    color: white;
+}
+
+.header-logo {
+    width: 60px;
+    height: 30px;
+    border-radius: 10px;
+    object-fit: contain;
+}
+
+/* TITULOS */
+.titulo {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.subtitulo {
+    font-size: 1rem;
+    opacity: 0.85;
+}
+
+/* TARJETA PRINCIPAL */
+.prestamo-card {
+    border-radius: 18px;
+}
+
+.titulo-seccion {
+    color: #1e3a8a;
+    font-weight: 700;
+}
+
+/* CAMPOS */
+.campo {
+    height: 50px;
+    border-radius: 12px;
+    font-size: 1rem;
+    padding-left: 15px;
+}
+
+/* BOTÓN */
+.btn-registrar {
+    padding: 12px 32px;
+    font-size: 1.1rem;
+    border-radius: 12px;
+    font-weight: 600;
+    background-color: #1e3a8a;
+    border: none;
+    transition: 0.3s ease;
+    color: white;
+}
+
+.btn-registrar:hover {
+    background-color: #16306b;
+    transform: translateY(-2px);
+}

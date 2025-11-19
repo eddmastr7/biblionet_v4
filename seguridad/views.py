@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.contrib import messages
 from django.core.paginator import Paginator
 
-from biblio.models import Usuarios, Roles, Libros, Prestamos, Bitacora, Libros, Reservas
+from biblio.models import Usuarios, Roles, Libros, Prestamos, Bitacora, Libros, ReglasPrestamo
 
 # ---------- Helpers de sesión / roles ----------
 def _usuario_autenticado(request):
@@ -15,20 +15,6 @@ def _usuario_autenticado(request):
 
 def _obtener_rol_usuario(request):
     return request.session.get("rol_usuario")
-
-
-# ESTA FUNCIÓN ES LA QUE FALTA O NO ESTÁ EN EL LUGAR CORRECTO
-def requerir_cliente(vista):
-    """Redirige a login si no hay sesión activa."""
-    @wraps(vista)
-    def envoltura(request, *args, **kwargs):
-        if not _usuario_autenticado(request):
-            messages.error(request, "Necesitas iniciar sesión como cliente para realizar esta acción.")
-            # Asegúrate de que 'inicio_sesion' es la URL de login de tus clientes
-            return redirect("inicio_sesion") 
-        return vista(request, *args, **kwargs)
-    return envoltura
-
 
 def requerir_rol(*roles_permitidos):
     """Redirige a login si no hay sesión o si el rol no está permitido."""
@@ -43,8 +29,6 @@ def requerir_rol(*roles_permitidos):
         return envoltura
     return decorador
 
-
-
 # ---------- Login / Logout (empleados/admin) ----------
 def _redirigir_segun_rol(rol):
     if rol=="administrador":
@@ -53,17 +37,10 @@ def _redirigir_segun_rol(rol):
         return redirect('panel_bibliotecario')
     
     
-
 @csrf_protect
 def iniciar_sesion_empleado(request):
-    if _usuario_autenticado(request):
-        rol_actual = _obtener_rol_usuario(request)
-        if rol_actual == "administrador":
-            return redirect("panel_administrador")
-        else:
-            return redirect("panel_bibliotecario")
-    
     contexto = {"error": None}
+
     if request.method == "POST":
         correo = request.POST.get("email", "").strip()
         contrasena = request.POST.get("password", "")
@@ -92,7 +69,6 @@ def iniciar_sesion_empleado(request):
             contexto["error"] = "Credenciales incorrectas. Intenta nuevamente."
             return render(request, "seguridad/login_empleados.html", contexto)
 
-        # Verificar contraseña
         contrasena_bd = usuario.clave or ""
         if contrasena_bd.startswith(("pbkdf2_", "argon2$", "bcrypt$")):
             coincide = check_password(contrasena, contrasena_bd)
@@ -103,7 +79,7 @@ def iniciar_sesion_empleado(request):
             contexto["error"] = "Credenciales incorrectas. Intenta nuevamente."
             return render(request, "seguridad/login_empleados.html", contexto)
 
-        # Login exitoso
+        # Login exitoso: pisamos cualquier sesión previa
         request.session["id_usuario"] = usuario.id
         request.session["correo_usuario"] = usuario.email
         request.session["rol_usuario"] = usuario.rol.nombre
@@ -116,8 +92,20 @@ def iniciar_sesion_empleado(request):
 
     return render(request, "seguridad/login_empleados.html", contexto)
 
+
 def cerrar_sesion_empleado(request):
+    # Por si en algún momento se usa el sistema de auth de Django
+    auth_logout(request)
+
+    # Borrar claves específicas que usamos para empleados
+    for key in ["id_usuario", "correo_usuario", "rol_usuario"]:
+        if key in request.session:
+            del request.session[key]
+
+    # Vaciar por completo la sesión y regenerar la cookie
     request.session.flush()
+
+    messages.success(request, "Sesión de empleado cerrada correctamente.")
     return redirect("inicio_sesion")
 
 # ---------- Paneles ----------
@@ -254,6 +242,68 @@ def registrar_empleado(request):
 
     return render(request, "seguridad/registrar_empleados.html", contexto)
 
+@requerir_rol("administrador")
+@csrf_protect
+def configurar_reglas_prestamo(request):
+    """
+    Vista para que el administrador configure las reglas generales de préstamo.
+    Usa la última regla registrada o crea una nueva si no existe.
+    """
+    try:
+        usuario_actual = Usuarios.objects.select_related("rol").get(
+            id=request.session.get("id_usuario")
+        )
+    except Usuarios.DoesNotExist:
+        return redirect("cerrar_sesion")
+
+    # Tomamos la última regla (puede ser la única) o None si no existe
+    regla = ReglasPrestamo.objects.order_by("-fecha_actualizacion").first()
+
+    if request.method == "POST":
+        plazo_dias = request.POST.get("plazo_dias")
+        limite_prestamos = request.POST.get("limite_prestamos")
+        tarifa_mora_diaria = request.POST.get("tarifa_mora_diaria")
+        # si después quieres descripción adicional, la agregamos; por ahora lo simplificamos
+        descripcion = "Reglas generales de préstamo"
+
+        if not plazo_dias or not limite_prestamos or not tarifa_mora_diaria:
+            messages.error(request, "Completa todos los campos.")
+        else:
+            try:
+                if regla is None:
+                    regla = ReglasPrestamo()
+
+                regla.plazo_dias = int(plazo_dias)
+                regla.limite_prestamos = int(limite_prestamos)
+                regla.tarifa_mora_diaria = tarifa_mora_diaria
+                regla.descripcion = descripcion
+                regla.fecha_actualizacion = timezone.now()
+                regla.save()
+
+                Bitacora.objects.create(
+                    usuario=usuario_actual,
+                    accion=(
+                        f"ACTUALIZÓ REGLAS DE PRÉSTAMO: "
+                        f"plazo={regla.plazo_dias} días, "
+                        f"límite={regla.limite_prestamos}, "
+                        f"mora={regla.tarifa_mora_diaria}"
+                    ),
+                    fecha=timezone.now()
+                )
+
+                messages.success(request, "Reglas de préstamo actualizadas correctamente.")
+                return redirect("configurar_reglas_prestamo")
+
+            except Exception as e:
+                messages.error(request, f"Error al guardar las reglas: {str(e)}")
+
+    contexto = {
+        "usuario_actual": usuario_actual,
+        "regla": regla,
+    }
+    return render(request, "seguridad/reglas.html", contexto)
+
+
 @requerir_rol("bibliotecario")
 
 def inventario(request):
@@ -313,7 +363,6 @@ def inventario(request):
 
             anio_publicacion = str(request.POST.get('anio_publicacion'))
 
-            libro.isbn = request.POST.get('isbn')
             libro.titulo = request.POST.get('titulo')
             libro.autor = request.POST.get('autor')
             libro.categoria = request.POST.get('categoria')
@@ -348,106 +397,3 @@ def inventario(request):
     }
 
     return render(request, "seguridad/inventario.html", contexto)
-
-
-# ---------- LÓGICA DE RESERVAS (CORREGIDA) ----------
-
-@requerir_cliente # Usamos el decorador para forzar la sesión de cliente
-@csrf_protect
-def solicitar_reserva(request, libro_pk):
-    # La view ahora exige POST Y protección CSRF
-    if request.method == 'POST':
-        # Obtener el objeto Usuarios usando la ID de sesión
-        try:
-            cliente = Usuarios.objects.get(id=request.session.get("id_usuario"))
-        except Usuarios.DoesNotExist:
-            messages.error(request, "Error de sesión. Por favor, vuelve a iniciar sesión.")
-            return redirect("inicio_sesion")
-
-        libro = get_object_or_404(Libros, id=libro_pk)
-        
-        # Validación de disponibilidad
-        if libro.stock_disponible > 0:
-            messages.warning(request, f'El libro "{libro.titulo}" está disponible y no requiere reserva.')
-            return redirect('ficha_libro', pk=libro_pk)
-            
-        # 1. CRITERIO: Prevenir reservas duplicadas
-        # Asumo que tu modelo Reservas tiene los campos 'cliente' (Foreign Key a Usuarios) y 'estado'
-        if Reservas.objects.filter(cliente=cliente, libro=libro, estado='pendiente').exists():
-            messages.info(request, f'Ya tienes una reserva pendiente para el libro "{libro.titulo}".')
-            return redirect('ficha_libro', pk=libro_pk)
-
-        # 2. Crear la Reserva (asumo 'estado'='pendiente' por defecto en el modelo)
-        Reservas.objects.create(
-            cliente=cliente, 
-            libro=libro,
-            fecha_reserva=timezone.now(),
-            estado='pendiente' # Asegúrate que tu modelo acepte este valor
-        )
-        
-        # Redirigir al listado de reservas del cliente (la nueva vista)
-        messages.success(request, f'¡Reserva del libro "{libro.titulo}" creada con éxito! Estás en la lista de espera.')
-        return redirect('listado_reservas') # Redirige al nuevo listado de reservas
-
-    # Si llega un GET, lo tratamos como error (debería ser POST)
-    messages.error(request, "Método inválido para realizar una reserva.")
-    return redirect('ficha_libro', pk=libro_pk)
-
-
-# NUEVA VISTA: LISTADO DE RESERVAS DEL CLIENTE
-@requerir_cliente
-def listado_reservas_view(request):
-    try:
-        cliente = Usuarios.objects.get(id=request.session.get("id_usuario"))
-    except Usuarios.DoesNotExist:
-        messages.error(request, "Error de sesión. Por favor, vuelve a iniciar sesión.")
-        return redirect("inicio_sesion")
-
-    # Obtener todas las reservas del cliente, pendientes y activas
-    reservas_cliente = Reservas.objects.filter(
-        cliente=cliente
-    ).select_related('libro').order_by('-fecha_reserva')
-    
-    contexto = {
-        'usuario_actual': cliente,
-        'reservas': reservas_cliente,
-        # Puedes añadir paginación aquí si el listado es muy largo
-    }
-    # Renderiza la nueva plantilla HTML que crearemos abajo
-    return render(request, 'catalogo/reservas.html', contexto)
-
-
-# VISTA DE CATÁLOGO (Mantengo tu lógica original)
-def catalogo_view(request):
-    # ... (Tu código actual de catalogo_view)
-    libros = Libros.objects.all()
-    query = request.GET.get('q')
-    
-    # ... (Implementa tu lógica de búsqueda/filtrado)
-    
-    context = {'libros': libros, 'query': query}
-    return render(request, 'catalogo/catalogo.html', context)
-
-
-# VISTA DE FICHA (Mantengo tu lógica original)
-def ficha_libro(request, pk):
-    libro = get_object_or_404(Libros, id=pk)
-    
-    # IMPORTANTE: Necesitas saber si el cliente ya tiene una reserva para el libro
-    ya_reservado = False
-    if _usuario_autenticado(request):
-        try:
-            cliente = Usuarios.objects.get(id=request.session.get("id_usuario"))
-            ya_reservado = Reservas.objects.filter(
-                cliente=cliente, 
-                libro=libro, 
-                estado__in=['pendiente', 'activa']
-            ).exists()
-        except Usuarios.DoesNotExist:
-             pass # Si no existe, no puede haber reservado
-
-    contexto = {
-        'libro': libro,
-        'ya_reservado': ya_reservado,
-    }
-    return render(request, 'catalogo/ficha_libro.html', contexto)
