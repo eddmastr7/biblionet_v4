@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.contrib import messages
 from django.core.paginator import Paginator
 
-from biblio.models import Usuarios, Roles, Libros, Prestamos, Bitacora, Libros
+from biblio.models import Usuarios, Roles, Libros, Prestamos, Bitacora, Libros, Reservas
 
 # ---------- Helpers de sesión / roles ----------
 def _usuario_autenticado(request):
@@ -15,6 +15,20 @@ def _usuario_autenticado(request):
 
 def _obtener_rol_usuario(request):
     return request.session.get("rol_usuario")
+
+
+# ESTA FUNCIÓN ES LA QUE FALTA O NO ESTÁ EN EL LUGAR CORRECTO
+def requerir_cliente(vista):
+    """Redirige a login si no hay sesión activa."""
+    @wraps(vista)
+    def envoltura(request, *args, **kwargs):
+        if not _usuario_autenticado(request):
+            messages.error(request, "Necesitas iniciar sesión como cliente para realizar esta acción.")
+            # Asegúrate de que 'inicio_sesion' es la URL de login de tus clientes
+            return redirect("inicio_sesion") 
+        return vista(request, *args, **kwargs)
+    return envoltura
+
 
 def requerir_rol(*roles_permitidos):
     """Redirige a login si no hay sesión o si el rol no está permitido."""
@@ -28,6 +42,8 @@ def requerir_rol(*roles_permitidos):
             return vista(request, *args, **kwargs)
         return envoltura
     return decorador
+
+
 
 # ---------- Login / Logout (empleados/admin) ----------
 def _redirigir_segun_rol(rol):
@@ -332,3 +348,106 @@ def inventario(request):
     }
 
     return render(request, "seguridad/inventario.html", contexto)
+
+
+# ---------- LÓGICA DE RESERVAS (CORREGIDA) ----------
+
+@requerir_cliente # Usamos el decorador para forzar la sesión de cliente
+@csrf_protect
+def solicitar_reserva(request, libro_pk):
+    # La view ahora exige POST Y protección CSRF
+    if request.method == 'POST':
+        # Obtener el objeto Usuarios usando la ID de sesión
+        try:
+            cliente = Usuarios.objects.get(id=request.session.get("id_usuario"))
+        except Usuarios.DoesNotExist:
+            messages.error(request, "Error de sesión. Por favor, vuelve a iniciar sesión.")
+            return redirect("inicio_sesion")
+
+        libro = get_object_or_404(Libros, id=libro_pk)
+        
+        # Validación de disponibilidad
+        if libro.stock_disponible > 0:
+            messages.warning(request, f'El libro "{libro.titulo}" está disponible y no requiere reserva.')
+            return redirect('ficha_libro', pk=libro_pk)
+            
+        # 1. CRITERIO: Prevenir reservas duplicadas
+        # Asumo que tu modelo Reservas tiene los campos 'cliente' (Foreign Key a Usuarios) y 'estado'
+        if Reservas.objects.filter(cliente=cliente, libro=libro, estado='pendiente').exists():
+            messages.info(request, f'Ya tienes una reserva pendiente para el libro "{libro.titulo}".')
+            return redirect('ficha_libro', pk=libro_pk)
+
+        # 2. Crear la Reserva (asumo 'estado'='pendiente' por defecto en el modelo)
+        Reservas.objects.create(
+            cliente=cliente, 
+            libro=libro,
+            fecha_reserva=timezone.now(),
+            estado='pendiente' # Asegúrate que tu modelo acepte este valor
+        )
+        
+        # Redirigir al listado de reservas del cliente (la nueva vista)
+        messages.success(request, f'¡Reserva del libro "{libro.titulo}" creada con éxito! Estás en la lista de espera.')
+        return redirect('listado_reservas') # Redirige al nuevo listado de reservas
+
+    # Si llega un GET, lo tratamos como error (debería ser POST)
+    messages.error(request, "Método inválido para realizar una reserva.")
+    return redirect('ficha_libro', pk=libro_pk)
+
+
+# NUEVA VISTA: LISTADO DE RESERVAS DEL CLIENTE
+@requerir_cliente
+def listado_reservas_view(request):
+    try:
+        cliente = Usuarios.objects.get(id=request.session.get("id_usuario"))
+    except Usuarios.DoesNotExist:
+        messages.error(request, "Error de sesión. Por favor, vuelve a iniciar sesión.")
+        return redirect("inicio_sesion")
+
+    # Obtener todas las reservas del cliente, pendientes y activas
+    reservas_cliente = Reservas.objects.filter(
+        cliente=cliente
+    ).select_related('libro').order_by('-fecha_reserva')
+    
+    contexto = {
+        'usuario_actual': cliente,
+        'reservas': reservas_cliente,
+        # Puedes añadir paginación aquí si el listado es muy largo
+    }
+    # Renderiza la nueva plantilla HTML que crearemos abajo
+    return render(request, 'catalogo/reservas.html', contexto)
+
+
+# VISTA DE CATÁLOGO (Mantengo tu lógica original)
+def catalogo_view(request):
+    # ... (Tu código actual de catalogo_view)
+    libros = Libros.objects.all()
+    query = request.GET.get('q')
+    
+    # ... (Implementa tu lógica de búsqueda/filtrado)
+    
+    context = {'libros': libros, 'query': query}
+    return render(request, 'catalogo/catalogo.html', context)
+
+
+# VISTA DE FICHA (Mantengo tu lógica original)
+def ficha_libro(request, pk):
+    libro = get_object_or_404(Libros, id=pk)
+    
+    # IMPORTANTE: Necesitas saber si el cliente ya tiene una reserva para el libro
+    ya_reservado = False
+    if _usuario_autenticado(request):
+        try:
+            cliente = Usuarios.objects.get(id=request.session.get("id_usuario"))
+            ya_reservado = Reservas.objects.filter(
+                cliente=cliente, 
+                libro=libro, 
+                estado__in=['pendiente', 'activa']
+            ).exists()
+        except Usuarios.DoesNotExist:
+             pass # Si no existe, no puede haber reservado
+
+    contexto = {
+        'libro': libro,
+        'ya_reservado': ya_reservado,
+    }
+    return render(request, 'catalogo/ficha_libro.html', contexto)

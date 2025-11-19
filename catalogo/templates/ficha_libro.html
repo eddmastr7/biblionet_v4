@@ -1,31 +1,43 @@
 <h1>Ficha Detallada: {{ libro.titulo }}</h1>
-
 <p><strong>Autor:</strong> {{ libro.autor }}</p>
 
 <p>
-    <strong>Disponibilidad:</strong>
-    {% if libro.disponible %}
-        <span style="color: green; font-weight: bold;">✅ Disponible para Préstamo</span>
-    {% else %}
-        <span style="color: red; font-weight: bold;">❌ Actualmente Prestado</span>
-    {% endif %}
+    <strong>Disponibilidad:</strong>
+    {% if libro.stock_disponible > 0 %}          <span style="color: green; font-weight: bold;">✅ Disponible para Préstamo</span>
+    {% else %}
+        <span style="color: red; font-weight: bold;">❌ Actualmente Prestado/Reservado</span>
+    {% endif %}
 </p>
-
-<p>Esto es un ejemplo de detalles adicionales del libro...</p>
 
 <hr>
 
-{% if not libro.disponible %}
-    <form method="POST" action="{% url 'solicitar_reserva' libro.pk %}">
-        {% csrf_token %} 
-        <button type="submit" 
-                style="background-color: #ffc107; color: black; padding: 10px; border: none; cursor: pointer;">
-            Reservar Libro (Lista de Espera)
-        </button>
-    </form>
-{% elif libro.disponible %}
-    <p>El libro está disponible. Puedes solicitar el préstamo en el mostrador.</p>
+{# 🎯 VERIFICACIÓN CRÍTICA: ¿El cliente está logueado? #}
+{% if request.session.cliente_id %}
+    
+    {% if not libro.disponible %}
+        <form method="POST" action="{% url 'solicitar_reserva' libro.pk %}">
+            {% csrf_token %} 
+            <button type="submit" 
+                    style="background-color: #ffc107; color: black; padding: 10px; border: none; cursor: pointer;">
+                Reservar Libro (Lista de Espera)
+            </button>
+        </form>
+    {% else %}
+        <p>El libro está disponible. Puedes solicitar el préstamo en el mostrador.</p>
+    {% endif %}
+
+{% else %}
+    
+    {% if not libro.disponible %}
+        <div class="alert alert-warning" role="alert" style="padding: 10px; border: 1px solid #ffc107;">
+            Para reservar este libro (actualmente no disponible), debes 
+            <a href="{% url 'inicio_sesion_cliente' %}" class="alert-link">iniciar sesión</a>.
+        </div>
+    {% else %}
+        <p>El libro está disponible. Puedes solicitar el préstamo en el mostrador.</p>
+    {% endif %}
+
 {% endif %}
 
 <hr>
-<a href="{% url 'catalogo_url' %}">← Volver al Catálogo</a>
+<a href="{% url 'catalogo' %}">← Volver al Catálogo</a>

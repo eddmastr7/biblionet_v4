@@ -1,0 +1,86 @@
+{% extends "base.html" %} 
+
+{% block title %}Mis Reservas Activas{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    
+    {% if messages %}
+        <div class="row">
+            <div class="col-12">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" role="alert">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h3 class="mb-0">Mis Reservas y Préstamos Pendientes</h3>
+        </div>
+        <div class="card-body">
+            
+            <p>Aquí puedes gestionar tus reservas activas y ver el estado de los libros que has solicitado.</p>
+
+            <div class="table-responsive mt-4">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Título del Libro</th>
+                            <th scope="col">Fecha de Reserva</th>
+                            <th scope="col">Estado</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reserva in reservas %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'ficha_libro' reserva.libro.id %}" class="text-decoration-none">{{ reserva.libro.titulo }}</a>
+                            </td>
+                            <td>{{ reserva.fecha_reserva|date:"d M, Y" }}</td>
+                            <td>
+                                {% if reserva.estado == 'pendiente' %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% elif reserva.estado == 'activa' %}
+                                    <span class="badge bg-primary">Disponible para Retiro</span>
+                                {% elif reserva.estado == 'cancelada' %}
+                                    <span class="badge bg-danger">Cancelada</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ reserva.estado|capfirst }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if reserva.estado == 'pendiente' %}
+                                    <form action="{% url 'cancelar_reserva' reserva.id %}" method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Cancelar Reserva">
+                                            <i class="bi bi-x-circle">C</i> 
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">
+                                No tienes reservas activas o pendientes en este momento.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <a href="{% url 'catalogo_url' %}" class="btn btn-outline-secondary mt-3">
+                <i class="bi bi-arrow-left"></i> Volver al Catálogo
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock content %}

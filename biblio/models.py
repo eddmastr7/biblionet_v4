@@ -149,8 +149,4 @@ class CatalogoPublico(models.Model):
     total_ejemplares = models.IntegerField()
     disponibles = models.IntegerField()
 
-    class Meta:
-        managed = False
-        db_table = 'catalogo_publico'
-
-
+    
