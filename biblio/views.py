@@ -1,22 +1,34 @@
-from django.shortcuts import render, redirect
+from datetime import timedelta
+
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
 from django.db import transaction
-from biblio.models import Usuarios, Roles, Clientes, Libros
 from django.views.decorators.csrf import csrf_protect
 from django.core.paginator import Paginator
 
-def inicio(request):
-    # Renderiza tu plantilla: biblio/templates/publico/pagina_inicio.html
-    return render(request, "publico/pagina_inicio.html")
+from biblio.models import Usuarios, Roles, Clientes, Libros, Reservas
 
-from django.core.paginator import Paginator
-from django.shortcuts import render
-from biblio.models import Libros
+def inicio(request):
+    # Detectar si hay cliente logueado por sesión
+    cliente = None
+    if request.session.get("cliente_id"):
+        try:
+            cliente = Clientes.objects.select_related("usuario").get(
+                id=request.session["cliente_id"]
+            )
+        except Clientes.DoesNotExist:
+            cliente = None
+
+    return render(request, "publico/pagina_inicio.html", {"cliente": cliente})
+
 
 def catalogo(request):
+    # ⬇️ info de cliente logueado (según nuestra sesión propia)
+    cliente, usuario_cliente = _obtener_cliente_sesion(request)
+
     q = (request.GET.get("q") or "").strip()
     categoria = (request.GET.get("categoria") or "").strip()
     estado = (request.GET.get("estado") or "").strip()
@@ -66,20 +78,56 @@ def catalogo(request):
         "categoria": categoria,
         "estado": estado,
         "orden": orden,
+        # ⬇️ para que el template sepa si hay cliente logueado
+        "cliente": cliente,
+        "usuario_cliente": usuario_cliente,
     }
 
     return render(request, "publico/catalogo.html", ctx)
 
 
+def _obtener_cliente_sesion(request):
+    """
+    Devuelve (cliente, usuario_cliente) si hay cliente logueado en la sesión,
+    si no, (None, None).
+    """
+    cliente = None
+    usuario_cliente = None
+
+    cliente_id = request.session.get("cliente_id")
+    if cliente_id:
+        try:
+            cliente = Clientes.objects.select_related("usuario").get(
+                id=cliente_id,
+                estado__iexact="activo"
+            )
+            usuario_cliente = cliente.usuario
+        except Clientes.DoesNotExist:
+            pass
+
+    return cliente, usuario_cliente
+
 
 def acerca_de(request):
-    clientes_activos=Clientes.objects.filter(estado__iexact="activo").count()
+    clientes_activos = Clientes.objects.filter(estado__iexact="activo").count()
+
+    # Detectar si hay cliente logueado
+    cliente = None
+    if request.session.get("cliente_id"):
+        try:
+            cliente = Clientes.objects.select_related("usuario").get(
+                id=request.session["cliente_id"]
+            )
+        except Clientes.DoesNotExist:
+            cliente = None
 
     contexto = {
-          'clientes_activos': clientes_activos
+        "clientes_activos": clientes_activos,
+        "cliente": cliente,
     }
 
     return render(request, "publico/acerca_de.html", contexto)
+
 
 
 def _password_ok(raw, stored):
@@ -226,5 +274,130 @@ def cerrar_sesion_cliente(request):
     return redirect("inicio_sesion_cliente") 
 
 def lista_reservas_clientes(request):
-    # Sin funcionalidad, solo muestra el template
-    return render(request, 'clientes/lista_reservas_clientes.html')
+    """
+    Muestra las reservas activas del cliente logueado.
+    """
+    if "cliente_id" not in request.session:
+        messages.error(request, "Debes iniciar sesión para ver tus reservas.")
+        return redirect("inicio_sesion_cliente")
+
+    cliente = get_object_or_404(Clientes, id=request.session["cliente_id"])
+    usuario = cliente.usuario
+
+    reservas = (
+        Reservas.objects
+        .select_related("libro")
+        .filter(cliente=cliente, estado__iexact="activa")
+        .order_by("-fecha_reserva")
+    )
+
+    contexto = {
+        "cliente": cliente,
+        "usuario": usuario,
+        "reservas": reservas,
+    }
+    return render(request, "clientes/lista_reservas_clientes.html", contexto)
+
+
+
+@csrf_protect
+def reservar_libro(request, libro_id):
+    """
+    Crea una reserva para el cliente logueado sobre el libro indicado.
+    Luego redirige a la lista de reservas del cliente.
+    """
+    # Verificar que el cliente esté logueado (usamos la sesión, no auth de Django)
+    if "cliente_id" not in request.session:
+        messages.error(request, "Debes iniciar sesión para reservar un libro.")
+        return redirect("inicio_sesion_cliente")
+
+    cliente = get_object_or_404(Clientes, id=request.session["cliente_id"])
+    libro = get_object_or_404(Libros, id=libro_id)
+
+    # Solo aceptamos POST desde el formulario del catálogo/detalle
+    if request.method != "POST":
+        return redirect("detalle_libro", libro_id=libro.id)
+
+    # Evitar reservas duplicadas activas para el mismo libro y cliente
+    ya_tiene_reserva = Reservas.objects.filter(
+        cliente=cliente,
+        libro=libro,
+        estado__iexact="activa",
+    ).exists()
+
+    if ya_tiene_reserva:
+        messages.info(request, "Ya tienes una reserva activa para este libro.")
+        return redirect("lista_reservas_clientes")
+
+    ahora = timezone.now()
+    fecha_vencimiento = ahora + timedelta(days=2)  # ajusta los días si quieres
+
+    Reservas.objects.create(
+        cliente=cliente,
+        libro=libro,
+        fecha_reserva=ahora,
+        fecha_vencimiento=fecha_vencimiento,
+        estado="activa",
+    )
+
+    messages.success(request, "Reserva realizada correctamente.")
+    return redirect("lista_reservas_clientes")
+
+@csrf_protect
+def cancelar_reserva(request, reserva_id):
+    """
+    Cancela una reserva del cliente logueado.
+    """
+    if "cliente_id" not in request.session:
+        messages.error(request, "Debes iniciar sesión para gestionar tus reservas.")
+        return redirect("inicio_sesion_cliente")
+
+    # Solo aceptamos POST
+    if request.method != "POST":
+        return redirect("lista_reservas_clientes")
+
+    cliente = get_object_or_404(Clientes, id=request.session["cliente_id"])
+
+    # Solo puede cancelar reservas que sean suyas
+    reserva = get_object_or_404(
+        Reservas,
+        id=reserva_id,
+        cliente=cliente,
+    )
+
+    # Si ya no está activa, no hacemos nada
+    if reserva.estado and reserva.estado.lower() != "activa":
+        messages.info(request, "Esta reserva ya no se encuentra activa.")
+        return redirect("lista_reservas_clientes")
+
+    reserva.estado = "cancelada"
+    reserva.save()
+
+    messages.success(request, "La reserva se canceló correctamente.")
+    return redirect("lista_reservas_clientes")
+
+
+def detalle_libro(request, libro_id):
+    """
+    Muestra la información completa de un libro del catálogo.
+    Si hay cliente logueado (cliente_id en sesión), le permite reservar.
+    """
+    libro = get_object_or_404(Libros, id=libro_id)
+    disponible = (libro.stock_total or 0) > 0
+
+    cliente = None
+    if request.session.get("cliente_id"):
+        try:
+            cliente = Clientes.objects.select_related("usuario").get(
+                id=request.session["cliente_id"]
+            )
+        except Clientes.DoesNotExist:
+            cliente = None
+
+    contexto = {
+        "libro": libro,
+        "disponible": disponible,
+        "cliente": cliente,               # None si no está logueado
+    }
+    return render(request, "publico/detalle_libro.html", contexto)
+

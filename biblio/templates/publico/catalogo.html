@@ -64,17 +64,15 @@
             color: white;
         }
 
-       /* ===== PORTADA EN TARJETAS DEL CATÁLOGO ===== */
-.catalog-cover {
-    width: 100%;           /* que ocupe todo el ancho de la card */
-    height: 350px;         /* alto fijo del contenedor de la imagen */
-    
-    border-top-left-radius: 0.75rem;
-    border-top-right-radius: 0.75rem;
-    display: block;
-}
-
-
+        /* ===== PORTADA EN TARJETAS DEL CATÁLOGO ===== */
+        .catalog-cover {
+            width: 100%;
+            height: 350px;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+            display: block;
+            object-fit: cover;
+        }
     </style>
 </head>
 <body>
@@ -106,17 +104,31 @@
                 </ul>
 
                 <div class="d-flex align-items-center">
-                    {% if user.is_authenticated %}
-                        <!-- Usuario autenticado -->
+                    {% if cliente %}
+                        <!-- Cliente logueado vía sesión propia -->
                         <div class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom" href="#" role="button" data-bs-toggle="dropdown">
-                                <span class="user-name">Hola, {{ user.username }}</span>
+                                <span class="user-name">
+                                    Hola, {{ usuario_cliente.nombre }} {{ usuario_cliente.apellido }}
+                                </span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'perfil_cliente' %}">Mi Perfil</a></li>
-                                <li><a class="dropdown-item" href="{% url 'mis_reservas' %}">Mis Reservas</a></li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'pantalla_inicio_cliente' %}">
+                                        Mi Panel
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'lista_reservas_clientes' %}">
+                                        Mis Reservas
+                                    </a>
+                                </li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="{% url 'cerrar_sesion' %}">Cerrar Sesión</a></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{% url 'cerrar_sesion_cliente' %}">
+                                        Cerrar Sesión
+                                    </a>
+                                </li>
                             </ul>
                         </div>
                     {% else %}
@@ -139,7 +151,7 @@
                 </div>
                 <div class="col-lg-4 text-lg-end">
                     <div class="catalog-stats">
-                        <span class="stat-item">📚{{ total_libros }} Libros Disponibles</span>
+                        <span class="stat-item">📚 {{ total_libros }} Libros Disponibles</span>
                     </div>
                 </div>
             </div>
@@ -220,13 +232,12 @@
                     {% for libro in libros %}
                         <div class="col-md-6 col-lg-4">
                             <div class="card h-100 shadow-sm">
-                                
                                 {% if libro.portada %}
-                                <img src="{{ libro.portada.url }}" 
-                                class="card-img-top catalog-cover" alt="{{ libro.titulo }}">
+                                    <img src="{{ libro.portada.url }}" 
+                                         class="card-img-top catalog-cover" alt="{{ libro.titulo }}">
                                 {% else %}
-                                <img src="https://via.placeholder.com/200x300?text=Sin+Imagen"
-                                class="card-img-top catalog-cover" alt="{{ libro.titulo }}">
+                                    <img src="https://via.placeholder.com/200x300?text=Sin+Imagen"
+                                         class="card-img-top catalog-cover" alt="{{ libro.titulo }}">
                                 {% endif %}
 
                                 <div class="card-body d-flex flex-column">
@@ -240,9 +251,11 @@
                                         {% if libro.stock_total|default:0 > 0 %}
                                             <span class="badge bg-success mb-2">Disponible</span>
                                             <div class="d-grid gap-2">
-                                                <a href="#" class="btn btn-primary">Ver detalles</a>
-                                                {% if user.is_authenticated %}
-                                                    <!-- USUARIO AUTENTICADO: Reserva directa -->
+                                                <a href="{% url 'detalle_libro' libro.id %}" class="btn btn-primary">
+                                                    Ver detalles
+                                                </a>
+                                                {% if cliente %}
+                                                    <!-- CLIENTE LOGUEADO: Reserva directa -->
                                                     <form method="post" action="{% url 'reservar_libro' libro.id %}">
                                                         {% csrf_token %}
                                                         <button type="submit" class="btn btn-success w-100">
@@ -250,7 +263,7 @@
                                                         </button>
                                                     </form>
                                                 {% else %}
-                                                    <!-- USUARIO NO AUTENTICADO: Modal para login -->
+                                                    <!-- NO LOGUEADO: modal pidiendo iniciar sesión -->
                                                     <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalReservaLogin">
                                                         <i class="fas fa-bookmark me-2"></i>Reservar
                                                     </button>
@@ -259,14 +272,16 @@
                                         {% else %}
                                             <span class="badge bg-danger mb-2">No disponible</span>
                                             <div class="d-grid gap-2">
-                                                <a href="#" class="btn btn-primary">Ver detalles</a>
-                                                {% if user.is_authenticated %}
-                                                    <!-- USUARIO AUTENTICADO: Modal informativo -->
+                                                <a href="{% url 'detalle_libro' libro.id %}" class="btn btn-primary">
+                                                    Ver detalles
+                                                </a>
+                                                {% if cliente %}
+                                                    <!-- CLIENTE LOGUEADO: info de no disponible -->
                                                     <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalReservaNoDisponible">
                                                         <i class="fas fa-clock me-2"></i>Reservar
                                                     </button>
                                                 {% else %}
-                                                    <!-- USUARIO NO AUTENTICADO: Modal para login -->
+                                                    <!-- NO LOGUEADO: modal login -->
                                                     <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalReservaLogin">
                                                         <i class="fas fa-bookmark me-2"></i>Reservar
                                                     </button>
@@ -448,4 +463,3 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </body>
 </html>
-
