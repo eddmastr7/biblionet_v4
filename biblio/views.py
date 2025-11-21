@@ -94,28 +94,35 @@ def _password_ok(raw, stored):
 # ---------- Registro de cliente ----------
 def registro_cliente(request):
     if request.method == "POST":
-        nombre = request.POST.get("nombre","").strip().lower()
-        apellido = request.POST.get("apellido","").strip().lower()
-        email = request.POST.get("email","").strip().lower()
-        password = request.POST.get("password","")
-        confirm = request.POST.get("confirm_password","")
+        form_data = request.POST.copy()
+
+        nombre = form_data.get("nombre", "").strip().lower()
+        apellido = form_data.get("apellido", "").strip().lower()
+        email = form_data.get("email", "").strip().lower()
+        dni = form_data.get("dni", "").strip()
+        password = form_data.get("password", "")
+        confirm = form_data.get("confirm_password", "")
 
         # Validaciones mínimas - usando messages para errores
-        if not all([nombre, apellido, email, password, confirm]):
+        if not all([nombre, apellido, email, dni, password, confirm]):
             messages.error(request, "Completa todos los campos obligatorios.")
-            return render(request, "publico/registro_cliente.html", {"form": request.POST.copy()})
+            return render(request, "publico/registro_cliente.html", {"form": form_data})
         
         if len(password) < 8:
             messages.error(request, "La contraseña debe tener al menos 8 caracteres.")
-            return render(request, "publico/registro_cliente.html", {"form": request.POST.copy()})
+            return render(request, "publico/registro_cliente.html", {"form": form_data})
         
         if password != confirm:
             messages.error(request, "Las contraseñas no coinciden.")
-            return render(request, "publico/registro_cliente.html", {"form": request.POST.copy()})
+            return render(request, "publico/registro_cliente.html", {"form": form_data})
         
         if Usuarios.objects.filter(email=email).exists():
             messages.error(request, "Ya existe una cuenta con ese correo.")
-            return render(request, "publico/registro_cliente.html", {"form": request.POST.copy()})
+            return render(request, "publico/registro_cliente.html", {"form": form_data})
+
+        if Clientes.objects.filter(dni=dni).exists():
+            messages.error(request, "Ya existe un cliente registrado con ese DNI.")
+            return render(request, "publico/registro_cliente.html", {"form": form_data})
 
         # Crear usuario cliente
         try:
@@ -133,6 +140,7 @@ def registro_cliente(request):
                 
                 cliente = Clientes.objects.create(
                     usuario=usuario,
+                    dni=dni,
                     direccion=email,
                     estado="activo"
                 )
@@ -144,7 +152,7 @@ def registro_cliente(request):
             
         except Exception as e:
             messages.error(request, f"Error al crear la cuenta: {str(e)}")
-            return render(request, "publico/registro_cliente.html", {"form": request.POST.copy()})
+            return render(request, "publico/registro_cliente.html", {"form": form_data})
 
     return render(request, "publico/registro_cliente.html")
 

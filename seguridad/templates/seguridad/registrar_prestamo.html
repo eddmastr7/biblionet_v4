@@ -1,0 +1,201 @@
+{% load static %} 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Préstamo - BiblioNet</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/bibliotecario_home.css' %}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center">
+                <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" class="me-2 brand-logo">
+                <span class="brand-text">BiblioNet</span>
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="{% static 'imagenes/foto_perfil.jpeg' %}" alt="Usuario" class="rounded-circle me-2 user-avatar">
+                        <span class="user-name">
+                            {{ usuario_actual.nombre }} {{ usuario_actual.apellido }}
+                        </span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-user-edit me-2"></i>Mi Perfil</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configuración</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'cerrar_sesion' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>                   
+        </div>
+    </nav>
+
+    <!-- Encabezado -->
+    <header class="header-bibliotecario text-center">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">    
+                    <h1 class="catalog-title">
+                        <i class="fas fa-book-reader me-2"></i>
+                        Registrar nuevo préstamo
+                    </h1>
+                    <p class="text-white-50 mb-0">
+                        Completa la información del cliente y del libro (ISBN) según las reglas vigentes
+                    </p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container py-4">
+
+            <!-- Mensajes -->
+            {% if messages %}
+                <div class="mb-3">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} mb-1">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="row">
+                <!-- Formulario -->
+                <div class="col-lg-8 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-file-signature me-2"></i>
+                                Datos del préstamo
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">
+                                        DNI del cliente
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="dni"
+                                        class="form-control"
+                                        placeholder="Ej: 0801-1999-12345"
+                                        value="{{ form_data.dni|default:'' }}"
+                                        required
+                                    >
+                                    <div class="form-text">
+                                        Debe existir un cliente registrado con este DNI.
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">
+                                        ISBN del libro
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="isbn"
+                                        class="form-control"
+                                        placeholder="Ej: 1234567891234"
+                                        value="{{ form_data.isbn|default:'' }}"
+                                        pattern="^\d{13}$"
+                                        title="El ISBN debe contener exactamente 13 dígitos numéricos sin espacios"
+                                        required
+                                    >
+                                    <div class="form-text">
+                                        Se usará para buscar el libro en la base de datos.
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">
+                                        Fecha de inicio
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="fecha_inicio"
+                                        class="form-control"
+                                        value="{{ hoy|date:'Y-m-d' }}"
+                                        min="{{ hoy|date:'Y-m-d' }}"
+                                        required
+                                    >
+                                    <div class="form-text">
+                                        La fecha fin se calculará automáticamente según el plazo de préstamo.
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% url 'gestion_prestamos' %}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left me-1"></i> Volver
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i> Registrar préstamo
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumen de reglas -->
+                <div class="col-lg-4 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-gear me-2"></i>
+                                Reglas vigentes
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if regla %}
+                                <ul class="list-unstyled mb-0">
+                                    <li class="mb-2">
+                                        <strong>Plazo de préstamo:</strong><br>
+                                        {{ regla.plazo_dias }} días
+                                    </li>
+                                    <li class="mb-2">
+                                        <strong>Límite por cliente:</strong><br>
+                                        {{ regla.limite_prestamos }} préstamos activos
+                                    </li>
+                                    <li class="mb-2">
+                                        <strong>Mora diaria:</strong><br>
+                                        L. {{ regla.tarifa_mora_diaria }}
+                                    </li>
+                                    {% if regla.fecha_actualizacion %}
+                                        <li class="text-muted small mt-2">
+                                            Actualizado el {{ regla.fecha_actualizacion|date:"d/m/Y H:i" }}
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            {% else %}
+                                <p class="text-muted mb-0">
+                                    No hay reglas configuradas. Debes definirlas en
+                                    <a href="{% url 'configurar_reglas_prestamo' %}">Configuración de Reglas</a>.
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

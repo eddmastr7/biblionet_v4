@@ -1,0 +1,365 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Préstamos - BiblioNet</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/bibliotecario_home.css' %}">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center">
+                <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" class="me-2 brand-logo">
+                <span class="brand-text">BiblioNet</span>
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="{% static 'imagenes/foto_perfil.jpeg' %}" alt="Usuario" class="rounded-circle me-2 user-avatar">
+                        <span class="user-name">
+                            {{ usuario_actual.nombre }} {{ usuario_actual.apellido }}
+                        </span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-user-edit me-2"></i>Mi Perfil</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configuración</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'cerrar_sesion' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>                   
+        </div>
+    </nav>
+
+    <!-- Encabezado -->
+    <header class="header-bibliotecario text-center">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">    
+                    <h1 class="catalog-title">
+                        <i class="fas fa-book me-2"></i>
+                        Gestión de Préstamos
+                    </h1>
+                    <p class="text-white-50 mb-0">
+                        Revisa y administra los préstamos activos de la biblioteca
+                    </p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container-fluid py-4">
+            <!-- Acciones Rápidas -->
+            <div class="row action-buttons">
+                <div class="col-md-3 mb-3">
+                    <a href="{% url 'panel_bibliotecario' %}" class="btn btn-inventario w-100 btn-action">
+                        <i class="fas fa-home me-2"></i>
+                        Inicio
+                    </a>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <a href="{% url 'inventario' %}" class="btn btn-inventario w-100 btn-action">
+                        <i class="fas fa-boxes me-2"></i>
+                        Gestionar Inventario
+                    </a>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <a href="#" class="btn btn-venta w-100 btn-action">
+                        <i class="fas fa-cash-register me-2"></i>
+                        Realizar Venta
+                    </a>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <a href="#" class="btn btn-compra w-100 btn-action">
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        Realizar Compra
+                    </a>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <!-- Gestión de préstamos como activa -->
+                    <a href="{% url 'gestion_prestamos' %}" class="btn btn-prestamo w-100 btn-action active">
+                        <i class="fas fa-book me-2"></i>
+                        Gestión de préstamos
+                    </a>
+                </div>
+            </div>
+
+            <!-- Mensajes -->
+            {% if messages %}
+                <div class="mb-3">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} mb-1">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Listado de Préstamos Activos -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            Préstamos activos
+                        </h5>
+
+                        <!-- Buscador + botón añadir -->
+                        <div class="d-flex align-items-center gap-2">
+                            <form method="get" class="d-flex align-items-center">
+                                <input
+                                    type="search"
+                                    name="q"
+                                    class="form-control"
+                                    placeholder="Buscar por nombre de cliente..."
+                                    value="{{ query }}"
+                                >
+                                <button type="submit" class="btn btn-outline-primary ms-2">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </form>
+
+                            <a href="{% url 'registrar_prestamo' %}" class="btn btn-primary ms-2">
+                                <i class="fas fa-plus me-1"></i>
+                                Añadir nuevo préstamo
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Libro</th>
+                                    <th>Cliente</th>
+                                    <th>Fecha inicio</th>
+                                    <th>Fecha fin</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for prestamo in prestamos %}
+                                    <tr class="prestamo-activo">
+                                        <!-- LIBRO -->
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="book-cover me-3">
+                                                    <i class="fas fa-book text-muted"></i>
+                                                </div>
+                                                <div>
+                                                    <strong>{{ prestamo.ejemplar.libro.titulo }}</strong>
+                                                    <div class="text-muted small">
+                                                        Código: {{ prestamo.ejemplar.codigo_interno }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <!-- CLIENTE -->
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="user-avatar-small me-2">
+                                                    <i class="fas fa-user text-muted"></i>
+                                                </div>
+                                                <div>
+                                                    <strong>
+                                                        {{ prestamo.cliente.usuario.nombre }}
+                                                        {{ prestamo.cliente.usuario.apellido }}
+                                                    </strong>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <!-- FECHA INICIO -->
+                                        <td>
+                                            <div class="fw-bold">
+                                                {{ prestamo.fecha_inicio|date:"d/m/Y" }}
+                                            </div>
+                                        </td>
+
+                                        <!-- FECHA FIN -->
+                                        <td>
+                                            <div class="fw-bold">
+                                                {{ prestamo.fecha_fin|date:"d/m/Y" }}
+                                            </div>
+                                        </td>
+
+                                        <!-- ACCIONES -->
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <!-- Renovar (modal) -->
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-outline-success"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modalRenovar{{ prestamo.id }}"
+                                                    title="Renovar fecha de devolución"
+                                                >
+                                                    <i class="fas fa-redo me-1"></i> Renovar
+                                                </button>
+
+                                                <!-- Devolver -->
+                                                <form method="post" action="{% url 'devolver_prestamo' prestamo.id %}" style="display:inline;">
+                                                    {% csrf_token %}
+                                                    <button
+                                                        type="submit"
+                                                        class="btn btn-outline-danger"
+                                                        title="Marcar como devuelto"
+                                                    >
+                                                        <i class="fas fa-undo me-1"></i> Devolver
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">
+                                            No hay préstamos activos para mostrar.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Modales de renovación -->
+                    {% for prestamo in prestamos %}
+                    <div class="modal fade" id="modalRenovar{{ prestamo.id }}" tabindex="-1" aria-labelledby="modalRenovarLabel{{ prestamo.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <form method="post" action="{% url 'renovar_prestamo' prestamo.id %}">
+                                    {% csrf_token %}
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="modalRenovarLabel{{ prestamo.id }}">
+                                            Renovar préstamo
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p class="mb-2">
+                                            <strong>Libro:</strong> {{ prestamo.ejemplar.libro.titulo }}
+                                        </p>
+                                        <p class="mb-3">
+                                            <strong>Cliente:</strong>
+                                            {{ prestamo.cliente.usuario.nombre }} {{ prestamo.cliente.usuario.apellido }}
+                                        </p>
+
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Fecha actual de devolución</label>
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                value="{{ prestamo.fecha_fin|date:'d/m/Y' }}"
+                                                disabled
+                                            >
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="nueva_fecha_fin_{{ prestamo.id }}" class="form-label fw-semibold">
+                                                Nueva fecha de devolución
+                                            </label>
+                                            <input
+                                                type="date"
+                                                name="nueva_fecha_fin"
+                                                id="nueva_fecha_fin_{{ prestamo.id }}"
+                                                class="form-control"
+                                                required
+                                                min="{{ prestamo.fecha_fin|date:'Y-m-d' }}"
+                                            >
+                                            <div class="form-text">
+                                                La nueva fecha debe ser mayor a la fecha actual de devolución.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button
+                                            type="button"
+                                            class="btn btn-secondary"
+                                            data-bs-dismiss="modal"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="fas fa-save me-1"></i> Guardar cambios
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <!-- Paginación -->
+                    {% if prestamos.paginator.num_pages > 1 %}
+                        <div class="pagination-container">
+                            <div class="pagination-info">
+                                Mostrando página {{ prestamos.number }} de {{ prestamos.paginator.num_pages }}
+                            </div>
+                            <nav aria-label="Paginación de préstamos">
+                                <ul class="pagination mb-0">
+                                    {% if prestamos.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?q={{ query }}&page={{ prestamos.previous_page_number }}">
+                                                <i class="fas fa-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">
+                                                <i class="fas fa-chevron-left"></i>
+                                            </span>
+                                        </li>
+                                    {% endif %}
+
+                                    {% for num in prestamos.paginator.page_range %}
+                                        {% if num == prestamos.number %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ num }}</span>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?q={{ query }}&page={{ num }}">{{ num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    {% if prestamos.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?q={{ query }}&page={{ prestamos.next_page_number }}">
+                                                <i class="fas fa-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">
+                                                <i class="fas fa-chevron-right"></i>
+                                            </span>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
