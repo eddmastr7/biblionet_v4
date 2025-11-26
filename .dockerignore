@@ -1,0 +1,35 @@
+# Directorios de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Entornos virtuales
+.venv/
+venv/
+
+# Control de versiones / IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Archivos de base de datos locales
+*.sqlite3
+*.db
+
+# Archivos de logs
+*.log
+
+# Archivos de compilación
+build/
+dist/
+
+# Archivos estáticos generados (collectstatic)
+staticfiles/
+
+# Subidas de usuario (en Docker se pueden montar como volumen si quieres)
+media/
+
+# No meter el .env real dentro de la imagen (en Docker usamos variables de entorno)
+.env

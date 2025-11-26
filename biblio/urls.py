@@ -12,7 +12,13 @@ urlpatterns = [
     path("registro/", views.registro_cliente, name="registro_cliente"),
     path("login/", views.inicio_sesion_cliente, name="inicio_sesion_cliente"),
     path("pantalla_inicio_cliente/", views.pantalla_inicio_cliente, name="pantalla_inicio_cliente"),
-    path("cerrar_sesion_cliente/", views.cerrar_sesion_cliente, name="cerrar_sesion_cliente"),
+    path(
+        "cliente/cerrar-sesion/",
+        views.cerrar_sesion_cliente,
+        name="cerrar_sesion_cliente",
+    ),
+    path("cliente/configuracion/", views.configuracion_cliente, name="configuracion_cliente"),
+    path("cliente/prestamos/", views.historial_prestamos_cliente, name="historial_prestamos_cliente"),
     path("reservas/", views.lista_reservas_clientes, name="lista_reservas_clientes"),
     path("cliente/reservas/<int:reserva_id>/cancelar/", views.cancelar_reserva, name="cancelar_reserva"),
 ]

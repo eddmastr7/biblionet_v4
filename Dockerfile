@@ -1,31 +1,29 @@
 # Imagen base de Python
-FROM python:3.12-slim
+FROM python:3.13-slim
 
-# Evitar archivos .pyc y usar stdout
+# No generar .pyc y loguear sin buffer
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Instalar dependencias del sistema (para mysqlclient)
+# Directorio de trabajo dentro del contenedor
+WORKDIR /app
+
+# Dependencias del sistema para mysqlclient
 RUN apt-get update && apt-get install -y \
     build-essential \
     default-libmysqlclient-dev \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# Crear carpeta de trabajo
-WORKDIR /app
-
-# Copiar requirements e instalarlos
+# Copiar e instalar dependencias de Python
 COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
-
-# Copiar TODO el proyecto
+# Copiar TODO el proyecto dentro del contenedor
 COPY . /app/
 
-# Puerto que expone Django
+# Exponer el puerto de Django
 EXPOSE 8000
 
-# Comando por defecto (lo sobreescribimos en docker-compose)
+# Comando por defecto: servidor de desarrollo de Django
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,14 +8,13 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/administrador.css' %}">
-    
 </head>
 
 <body>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" >
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'panel_administrador' %}">
                 <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" class="me-2 brand-logo">
                 <span class="brand-text">BiblioNet</span>
             </a>
@@ -24,16 +23,11 @@
                 <div class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <img src="{% static 'imagenes/foto_perfil.jpeg' %}" alt="Usuario" class="rounded-circle me-2 user-avatar">
-                        <span class="user-name">{{usuario_actual.nombre}} {{usuario_actual.apellido}}</span>
+                        <span class="user-name">{{ usuario_actual.nombre }} {{ usuario_actual.apellido }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="#"><i class="fas fa-user-edit me-2"></i>Mi Perfil</a></li>
-                        <li>
-    <a class="dropdown-item" href="{% url 'configurar_reglas_prestamo' %}">
-        <i class="fas fa-cog me-2"></i>Configuración de reglas
-    </a>
-</li>
-
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configuración</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="{% url 'cerrar_sesion' %}"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
                     </ul>
@@ -42,11 +36,21 @@
         </div>
     </nav>
 
-
     <main class="main-content">
         <div class="container-fluid costum_bg_color py-4">
 
-            <!-- Botones de Historial -->
+            <!-- Mensajes -->
+            {% if messages %}
+                <div class="mb-3">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} mb-1">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Botones de Historial / Navegación rápida -->
             <div class="row history-buttons">
                 <div class="col-md-6 mb-3">
                     <button class="btn w-100 btn-history">
@@ -54,120 +58,299 @@
                         Historial de Compras
                     </button>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <button class="btn w-100 btn-history">
-                        <i class="fas fa-history me-2"></i>
-                        Historial de Préstamos
-                    </button>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <a href="{% url 'configurar_reglas_prestamo' %}" class="btn w-100 btn-history">
-                        <i class="fas fa-sliders-h me-2"></i>
-                        Configuración de reglas de préstamo
-                    </a>
-                </div>
+
+                <!-- (Eliminado el botón de Historial de Préstamos) -->
+
                 <div class="col-md-6 mb-3">
                     <button class="btn w-100 btn-history">
                         <i class="fas fa-history me-2"></i>
                         Historial de ventas
                     </button>
                 </div>
+
+                <!-- Agregar nuevo empleado -->
                 <div class="col-md-6 mb-3">
                     <a href="{% url 'registrar_empleado' %}" class="btn w-100 btn-history">
-                      <i class="fas fa-user-plus me-2"></i>
-                    Agregar nuevo empleado
+                        <i class="fas fa-user-plus me-2"></i>
+                        Agregar nuevo empleado
                     </a>
-                </div> 
+                </div>
+
+                <!-- Gestión de clientes -->
+                <div class="col-md-6 mb-3">
+                    <a href="{% url 'gestion_clientes' %}" class="btn w-100 btn-history">
+                        <i class="fas fa-user-lock me-2"></i>
+                        Gestión de clientes
+                    </a>
+                </div>
+
+                <!-- Configurar reglas de préstamo / mora -->
+                <div class="col-md-6 mb-3">
+                    <a href="{% url 'configurar_reglas_prestamo' %}" class="btn w-100 btn-history">
+                        <i class="fas fa-balance-scale me-2"></i>
+                        Configurar reglas de préstamo y mora
+                    </a>
+                </div>
             </div>
             
-           <!-- Lista de empleados activos -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-white py-3">
-        <div class="d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">
-                <i class="fas fa-users me-2"></i>
-                Lista de Empleados
-                <span class="badge bg-primary ms-2">{{ empleados_activos }}</span>
-            </h5>
-            <div class="btn-group">
-                <button class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-filter me-2"></i>
-                    Filtrar
-                </button>
-            </div>
-        </div>
-    </div>
-    <div class="card-body p-0">
-        {% if empleados %}
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Apellido</th>
-                        <th>Correo</th>
-                        <th>Rol</th>
-                        <th>Fecha Registro</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
+            <!-- Lista de empleados -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-users me-2"></i>
+                            Lista de Empleados
+                            <span class="badge bg-primary ms-2">{{ empleados_activos }}</span>
+                        </h5>
+
+                        <!-- Búsqueda y filtro -->
+                        <div class="d-flex align-items-center gap-2">
+                            <form method="get" class="d-flex align-items-center">
+                                <!-- Buscar por nombre -->
+                                <input
+                                    type="search"
+                                    name="q"
+                                    class="form-control form-control-sm"
+                                    placeholder="Buscar por nombre..."
+                                    value="{{ query }}"
+                                >
+
+                                <!-- Filtro por estado -->
+                                <select name="estado" class="form-select form-select-sm ms-2">
+                                    <option value="">Todos</option>
+                                    <option value="activo" {% if estado_filtro == "activo" %}selected{% endif %}>Activos</option>
+                                    <option value="inactivo" {% if estado_filtro == "inactivo" %}selected{% endif %}>Inactivos</option>
+                                </select>
+
+                                <!-- Botón lupita -->
+                                <button
+                                    type="submit"
+                                    class="btn btn-outline-primary btn-sm ms-2"
+                                    title="Buscar"
+                                >
+                                    <i class="fas fa-search"></i>
+                                </button>
+
+                                <!-- Botón reset -->
+                                <a
+                                    href="{% url 'panel_administrador' %}"
+                                    class="btn btn-outline-secondary btn-sm ms-1"
+                                    title="Reiniciar búsqueda"
+                                >
+                                    <i class="fas fa-rotate-right"></i>
+                                </a>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    {% if empleados.object_list %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Apellido</th>
+                                    <th>Correo</th>
+                                    <th>Rol</th>
+                                    <th>Fecha Registro</th>
+                                    <th>Estado</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for empleado in empleados %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="user-avatar-small me-3 rounded bg-light d-flex align-items-center justify-content-center">
+                                                <i class="fas fa-user text-muted"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ empleado.nombre }}</strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ empleado.apellido }}</td>
+                                    <td>
+                                        <div class="fw-bold">{{ empleado.email }}</div>
+                                    </td>
+                                    <td>
+                                        {% if empleado.rol.nombre == "administrador" %}
+                                            <span class="badge bg-danger">Administrador</span>
+                                        {% else %}
+                                            <span class="badge bg-info">Bibliotecario</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if empleado.fecha_creacion %}
+                                            <div class="fw-bold">{{ empleado.fecha_creacion|date:"d/m/Y" }}</div>
+                                            <div class="text-muted small">{{ empleado.fecha_creacion|date:"H:i" }}</div>
+                                        {% else %}
+                                            <span class="text-muted">No registrada</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if empleado.estado == "activo" %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Activo
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-times me-1"></i>Inactivo
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <!-- Botón lápiz: abrir modal -->
+                                        <button
+                                            type="button"
+                                            class="btn btn-outline-primary btn-sm"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalEditarEmpleado{{ empleado.id }}"
+                                            title="Editar información del empleado"
+                                        >
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Modales de edición -->
                     {% for empleado in empleados %}
-                    <tr>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="user-avatar-small me-3 rounded bg-light d-flex align-items-center justify-content-center">
-                                    <i class="fas fa-user text-muted"></i>
-                                </div>
-                                <div>
-                                    <strong>{{ empleado.nombre }}</strong>
-                                </div>
+                    <div class="modal fade" id="modalEditarEmpleado{{ empleado.id }}" tabindex="-1" aria-labelledby="modalEditarEmpleadoLabel{{ empleado.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <form method="post" action="{% url 'editar_empleado' empleado.id %}">
+                                    {% csrf_token %}
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="modalEditarEmpleadoLabel{{ empleado.id }}">
+                                            Editar empleado
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Nombre</label>
+                                            <input
+                                                type="text"
+                                                name="nombre"
+                                                class="form-control"
+                                                value="{{ empleado.nombre }}"
+                                                required
+                                            >
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Apellido</label>
+                                            <input
+                                                type="text"
+                                                name="apellido"
+                                                class="form-control"
+                                                value="{{ empleado.apellido }}"
+                                                required
+                                            >
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Correo</label>
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                class="form-control"
+                                                value="{{ empleado.email }}"
+                                                required
+                                            >
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Estado</label>
+                                            <select name="estado" class="form-select" required>
+                                                <option value="activo" {% if empleado.estado == "activo" %}selected{% endif %}>Activo</option>
+                                                <option value="inactivo" {% if empleado.estado == "inactivo" %}selected{% endif %}>Inactivo</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button
+                                            type="button"
+                                            class="btn btn-secondary"
+                                            data-bs-dismiss="modal"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-1"></i> Guardar cambios
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
-                        </td>
-                        <td>{{ empleado.apellido }}</td>
-                        <td>
-                            <div class="fw-bold">{{ empleado.email }}</div>
-                        </td>
-                        <td>
-                            {% if empleado.rol.nombre == "administrador" %}
-                                <span class="badge bg-danger">Administrador</span>
-                            {% else %}
-                                <span class="badge bg-info">Bibliotecario</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if empleado.fecha_creacion %}
-                                <div class="fw-bold">{{ empleado.fecha_creacion|date:"d/m/Y" }}</div>
-                                <div class="text-muted small">{{ empleado.fecha_creacion|date:"H:i" }}</div>
-                            {% else %}
-                                <span class="text-muted">No registrada</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if empleado.estado == "activo" %}
-                                <span class="badge bg-success">
-                                    <i class="fas fa-check me-1"></i>Activo
-                                </span>
-                            {% else %}
-                                <span class="badge bg-secondary">
-                                    <i class="fas fa-times me-1"></i>Inactivo
-                                </span>
-                            {% endif %}
-                        </td>
-                    </tr>
+                        </div>
+                    </div>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="text-center py-5">
-            <i class="fas fa-users fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">No hay empleados registrados</h5>
-            <p class="text-muted">Usa el botón "Agregar nuevo empleado" para comenzar</p>
-        </div>
-        {% endif %}
-    </div>
-</div>
+
+                    <!-- Paginación -->
+                    {% if empleados.paginator.num_pages > 1 %}
+                    <div class="pagination-container px-3 pb-3">
+                        <div class="pagination-info">
+                            Mostrando página {{ empleados.number }} de {{ empleados.paginator.num_pages }}
+                        </div>
+                        <nav aria-label="Paginación de empleados">
+                            <ul class="pagination mb-0">
+                                {% if empleados.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?q={{ query }}&estado={{ estado_filtro }}&page={{ empleados.previous_page_number }}">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </span>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in empleados.paginator.page_range %}
+                                    {% if num == empleados.number %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?q={{ query }}&estado={{ estado_filtro }}&page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if empleados.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?q={{ query }}&estado={{ estado_filtro }}&page={{ empleados.next_page_number }}">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </span>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No hay empleados registrados</h5>
+                        <p class="text-muted">Usa el botón "Agregar nuevo empleado" para comenzar</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </main>
 

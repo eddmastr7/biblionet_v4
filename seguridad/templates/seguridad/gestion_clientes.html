@@ -1,0 +1,233 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Clientes</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/administrador.css' %}">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'panel_administrador' %}">
+                <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" class="me-2 brand-logo">
+                <span class="brand-text">BiblioNet</span>
+            </a>
+
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="{% static 'imagenes/foto_perfil.jpeg' %}" alt="Usuario" class="rounded-circle me-2 user-avatar">
+                        <span class="user-name">{{ usuario_actual.nombre }} {{ usuario_actual.apellido }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-user-edit me-2"></i>Mi Perfil</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configuración</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'cerrar_sesion' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>                   
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container-fluid costum_bg_color py-4">
+
+            <!-- Botón volver -->
+            <div class="mb-3">
+                <a href="{% url 'panel_administrador' %}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-1"></i> Volver al panel
+                </a>
+            </div>
+
+            <!-- Mensajes -->
+            {% if messages %}
+                <div class="mb-3">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} mb-1">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Card principal -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-users me-2"></i>
+                            Gestión de Clientes
+                        </h5>
+
+                        <!-- Búsqueda y filtros -->
+                        <form method="get" class="d-flex flex-wrap align-items-center gap-2">
+                            <!-- Buscar por nombre / dni -->
+                            <input
+                                type="search"
+                                name="q"
+                                class="form-control form-control-sm"
+                                placeholder="Buscar por nombre, apellido o DNI..."
+                                value="{{ query }}"
+                            >
+
+                            <!-- Filtro por estado general (activo/inactivo) -->
+                            <select name="estado" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                <option value="activo" {% if estado_filtro == "activo" %}selected{% endif %}>Activos</option>
+                                <option value="inactivo" {% if estado_filtro == "inactivo" %}selected{% endif %}>Inactivos</option>
+                            </select>
+
+                            <!-- Solo bloqueados -->
+                            <div class="form-check ms-1">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    name="solo_bloqueados"
+                                    value="1"
+                                    id="soloBloqueadosCheck"
+                                    {% if solo_bloqueados %}checked{% endif %}
+                                >
+                                <label class="form-check-label small" for="soloBloqueadosCheck">
+                                    Solo bloqueados
+                                </label>
+                            </div>
+
+                            <!-- Botón buscar -->
+                            <button type="submit" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-search"></i>
+                            </button>
+
+                            <!-- Reset filtros -->
+                            <a href="{% url 'gestion_clientes' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-rotate-right"></i>
+                            </a>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    {% if clientes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>DNI</th>
+                                        <th>Dirección</th>
+                                        <th>Estado</th>
+                                        <th>Bloqueo / Mora</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cliente in clientes %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="user-avatar-small me-3 rounded bg-light d-flex align-items-center justify-content-center">
+                                                        <i class="fas fa-user text-muted"></i>
+                                                    </div>
+                                                    <div>
+                                                        <strong>{{ cliente.usuario.nombre }} {{ cliente.usuario.apellido }}</strong><br>
+                                                        <span class="text-muted small">{{ cliente.usuario.email }}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="fw-semibold">{{ cliente.dni }}</span>
+                                            </td>
+                                            <td>
+                                                {% if cliente.direccion %}
+                                                    {{ cliente.direccion }}
+                                                {% else %}
+                                                    <span class="text-muted">No registrada</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if cliente.estado == "activo" %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check me-1"></i>Activo
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">
+                                                        <i class="fas fa-times me-1"></i>Inactivo
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if cliente.bloqueado %}
+                                                    <span class="badge bg-danger mb-1">
+                                                        <i class="fas fa-lock me-1"></i>Bloqueado
+                                                    </span>
+                                                    {% if cliente.motivo_bloqueo %}
+                                                        <div class="text-muted small">
+                                                            Motivo: {{ cliente.motivo_bloqueo }}
+                                                        </div>
+                                                    {% endif %}
+                                                    {% if cliente.fecha_bloqueo %}
+                                                        <div class="text-muted small">
+                                                            Desde: {{ cliente.fecha_bloqueo|date:"d/m/Y H:i" }}
+                                                        </div>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                        <i class="fas fa-unlock me-1"></i>Sin bloqueo
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                {% if cliente.bloqueado %}
+                                                    <!-- Botón DESBLOQUEAR -->
+                                                    <a
+                                                        href="{% url 'desbloquear_cliente' cliente.id %}"
+                                                        class="btn btn-sm btn-success"
+                                                        title="Desbloquear cliente"
+                                                        onclick="return confirm('¿Deseas desbloquear a este cliente?');"
+                                                    >
+                                                        <i class="fas fa-unlock me-1"></i>Desbloquear
+                                                    </a>
+                                                {% else %}
+                                                    <!-- Botón BLOQUEAR -->
+                                                    <a
+                                                        href="{% url 'bloquear_cliente' cliente.id %}"
+                                                        class="btn btn-sm btn-danger"
+                                                        title="Bloquear cliente"
+                                                        onclick="return confirm('¿Deseas bloquear a este cliente?');"
+                                                    >
+                                                        <i class="fas fa-lock me-1"></i>Bloquear
+                                                    </a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-users-slash fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No se encontraron clientes</h5>
+                            <p class="text-muted">
+                                Ajusta los filtros o verifica que existan clientes registrados.
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

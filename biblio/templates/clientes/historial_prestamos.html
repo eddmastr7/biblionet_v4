@@ -1,0 +1,366 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis préstamos - BiblioNet</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/estilos_generales_catalogo.css' %}">
+
+    <style>
+        .historial-wrapper {
+            max-width: 1100px;
+            margin: 2.5rem auto 4rem;
+        }
+
+        .card-prestamo {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            background: linear-gradient(135deg, #0f172a 0%, #0b1220 35%, #020617 100%);
+            color: #e5e7eb;
+        }
+
+        .card-prestamo:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.25);
+        }
+
+        .card-prestamo-activo {
+            border-left: 4px solid #22c55e;
+        }
+
+        .card-prestamo-devuelto {
+            border-left: 4px solid #2563eb;
+        }
+
+        .card-prestamo-vencido {
+            border-left: 4px solid #ef4444;
+        }
+
+        .card-prestamo-otro {
+            border-left: 4px solid #64748b;
+        }
+
+        .prestamo-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .icono-libro {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: radial-gradient(circle at 0 0, #22c55e, #2563eb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+        .estado-badge {
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: .04em;
+        }
+
+        .bg-estado-activo {
+            background: rgba(34, 197, 94, 0.15);
+            color: #bbf7d0;
+            border: 1px solid rgba(34, 197, 94, 0.5);
+        }
+
+        .bg-estado-devuelto {
+            background: rgba(59, 130, 246, 0.15);
+            color: #bfdbfe;
+            border: 1px solid rgba(59, 130, 246, 0.5);
+        }
+
+        .bg-estado-vencido {
+            background: rgba(239, 68, 68, 0.18);
+            color: #fecaca;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+        }
+
+        .bg-estado-otro {
+            background: rgba(148, 163, 184, 0.18);
+            color: #e5e7eb;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+        }
+
+        .pill-tabs .nav-link {
+            border-radius: 999px;
+            padding: 0.4rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .pill-tabs .nav-link.active {
+            background: linear-gradient(135deg, #2563eb, #22c55e);
+            color: #fff;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #9ca3af;
+        }
+
+        .empty-state i {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.8;
+        }
+
+        .main-content {
+            background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #020617 100%);
+            min-height: calc(100vh - 72px);
+        }
+
+        .badge-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #9ca3af;
+        }
+
+        @media (max-width: 768px) {
+            .historial-wrapper {
+                margin-top: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar igual que el panel cliente -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'inicio' %}">
+                <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" width="60" class="me-2 brand-logo">
+                <span class="brand-text">BiblioNet</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarCliente" aria-controls="navbarCliente"
+                    aria-expanded="false" aria-label="Menú de navegación">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse justify-content-end" id="navbarCliente">
+                <ul class="navbar-nav me-4">
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="{% url 'pantalla_inicio_cliente' %}">Panel</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="{% url 'catalogo' %}">Catálogo</a>
+                    </li>
+                </ul>
+
+                <div class="navbar-nav">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img src="{% static 'imagenes/foto_perfil.jpeg' %}" alt="Usuario"
+                                 class="rounded-circle me-2" style="width:36px;height:36px;object-fit:cover;">
+                            <span class="user-name">
+                                {{ usuario.nombre }} {{ usuario.apellido }}
+                            </span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'configuracion_cliente' %}">
+                                    <i class="fas fa-cog me-2"></i>Configuración
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{% url 'cerrar_sesion_cliente' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <main class="main-content">
+        <div class="container historial-wrapper">
+
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <h3 class="mb-1 text-white">Mis préstamos</h3>
+                    <p class="text-muted mb-0">
+                        Visualiza tus préstamos activos y tu historial completo.
+                    </p>
+                </div>
+                <!-- Botón azul para volver al panel -->
+                <a href="{% url 'pantalla_inicio_cliente' %}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-1"></i> Volver al panel
+                </a>
+            </div>
+
+            {% if messages %}
+                <div class="mb-3">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} mb-1">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body bg-slate-900" style="background: linear-gradient(135deg,#020617,#020617);">
+                    <!-- Tabs -->
+                    <ul class="nav nav-pills pill-tabs mb-3" id="pills-tab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="pills-activos-tab"
+                                    data-bs-toggle="pill" data-bs-target="#pills-activos"
+                                    type="button" role="tab"
+                                    aria-controls="pills-activos" aria-selected="true">
+                                <i class="fas fa-book-reader me-1"></i> Préstamos activos
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="pills-historial-tab"
+                                    data-bs-toggle="pill" data-bs-target="#pills-historial"
+                                    type="button" role="tab"
+                                    aria-controls="pills-historial" aria-selected="false">
+                                <i class="fas fa-clock-rotate-left me-1"></i> Historial completo
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="pills-tabContent">
+                        <!-- TAB ACTIVOS -->
+                        <div class="tab-pane fade show active" id="pills-activos" role="tabpanel"
+                             aria-labelledby="pills-activos-tab" tabindex="0">
+
+                            {% if prestamos_activos %}
+                                <div class="row g-3">
+                                    {% for prestamo in prestamos_activos %}
+                                        <div class="col-md-6">
+                                            <div class="card-prestamo card-prestamo-activo p-3 h-100">
+                                                <div class="prestamo-header mb-2">
+                                                    <div class="icono-libro">
+                                                        <i class="fas fa-book-open"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1">
+                                                        <div class="badge-label mb-1">Préstamo activo</div>
+                                                        <h6 class="mb-0 text-white">
+                                                            {{ prestamo.ejemplar.libro.titulo }}
+                                                        </h6>
+                                                        <small class="text-gray-300">
+                                                            {{ prestamo.ejemplar.libro.autor|default:"Autor desconocido" }}
+                                                        </small>
+                                                    </div>
+                                                    <span class="badge estado-badge bg-estado-activo">
+                                                        ACTIVO
+                                                    </span>
+                                                </div>
+
+                                                <div class="mt-2 small text-gray-200">
+                                                    <div><strong>Ejemplar:</strong> {{ prestamo.ejemplar.codigo_interno }}</div>
+                                                    <div><strong>Inicio:</strong> {{ prestamo.fecha_inicio|date:"d/m/Y" }}</div>
+                                                    <div><strong>Fecha de devolución:</strong> {{ prestamo.fecha_fin|date:"d/m/Y" }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="empty-state">
+                                    <i class="fas fa-circle-check"></i>
+                                    <p class="mb-1">No tienes préstamos activos.</p>
+                                    <p class="mb-0">Explora el <a href="{% url 'catalogo' %}">catálogo</a> para solicitar nuevos libros.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- TAB HISTORIAL COMPLETO -->
+                        <div class="tab-pane fade" id="pills-historial" role="tabpanel"
+                             aria-labelledby="pills-historial-tab" tabindex="0">
+
+                            {% if prestamos_historicos %}
+                                <div class="row g-3">
+                                    {% for prestamo in prestamos_historicos %}
+                                        <div class="col-md-6">
+                                            {% if prestamo.estado == "devuelto" %}
+                                                <div class="card-prestamo card-prestamo-devuelto p-3 h-100">
+                                            {% elif prestamo.estado == "vencido" %}
+                                                <div class="card-prestamo card-prestamo-vencido p-3 h-100">
+                                            {% else %}
+                                                <div class="card-prestamo card-prestamo-otro p-3 h-100">
+                                            {% endif %}
+                                                    <div class="prestamo-header mb-2">
+                                                        <div class="icono-libro">
+                                                            <i class="fas fa-book"></i>
+                                                        </div>
+                                                        <div class="flex-grow-1">
+                                                            <div class="badge-label mb-1">Registro histórico</div>
+                                                            <h6 class="mb-0 text-white">
+                                                                {{ prestamo.ejemplar.libro.titulo }}
+                                                            </h6>
+                                                            <small class="text-gray-300">
+                                                                {{ prestamo.ejemplar.libro.autor|default:"Autor desconocido" }}
+                                                            </small>
+                                                        </div>
+
+                                                        {% if prestamo.estado == "devuelto" %}
+                                                            <span class="badge estado-badge bg-estado-devuelto">
+                                                                DEVUELTO
+                                                            </span>
+                                                        {% elif prestamo.estado == "vencido" %}
+                                                            <span class="badge estado-badge bg-estado-vencido">
+                                                                VENCIDO
+                                                            </span>
+                                                        {% else %}
+                                                            <span class="badge estado-badge bg-estado-otro">
+                                                                {{ prestamo.estado|upper }}
+                                                            </span>
+                                                        {% endif %}
+                                                    </div>
+
+                                                    <div class="mt-2 small text-gray-200">
+                                                        <div><strong>Ejemplar:</strong> {{ prestamo.ejemplar.codigo_interno }}</div>
+                                                        <div><strong>Inicio:</strong> {{ prestamo.fecha_inicio|date:"d/m/Y" }}</div>
+                                                        <div><strong>Fecha programada:</strong> {{ prestamo.fecha_fin|date:"d/m/Y" }}</div>
+                                                        <div>
+                                                            <strong>Devolución real:</strong>
+                                                            {% if prestamo.fecha_devolucion %}
+                                                                {{ prestamo.fecha_devolucion|date:"d/m/Y" }}
+                                                            {% else %}
+                                                                <span class="text-muted">No registrada</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="empty-state">
+                                    <i class="fas fa-box-archive"></i>
+                                    <p class="mb-1">Todavía no tienes historial de préstamos.</p>
+                                    <p class="mb-0">Cuando devuelvas libros, aparecerán aquí.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

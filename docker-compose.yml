@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    container_name: biblionet_v3_web
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    # Variables de entorno que usa tu settings.py
+    environment:
+      SECRET_KEY: "biblio1"
+      DEBUG: "True"
+      DB_NAME: "biblionet"
+      DB_USER: "biblio"
+      DB_PASSWORD: "Proyecto1"
+      DB_HOST: "db"             # 👈 IMPORTANTE: apunta al servicio db
+      DB_PORT: "3306"
+      TIME_ZONE: "America/Tegucigalpa"
+    volumes:
+      - .:/app                  # Monta tu código local dentro del contenedor (modo dev)
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    container_name: biblionet_v3_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: "biblionet"
+      MYSQL_USER: "biblio"
+      MYSQL_PASSWORD: "Proyecto1"
+      MYSQL_ROOT_PASSWORD: "rootpass"
+    ports:
+      - "3306"             # Puerto 3307 en tu máquina -> 3306 en el contenedor
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:

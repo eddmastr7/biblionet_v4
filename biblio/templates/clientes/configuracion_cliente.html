@@ -1,0 +1,228 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi cuenta - BiblioNet</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/estilos_generales_catalogo.css' %}">
+
+    <style>
+        /* Contenedor principal más compacto */
+        .perfil-wrapper {
+            max-width: 900px;
+            margin: 2.5rem auto 4rem;
+        }
+
+        /* Encabezado del card */
+        .perfil-header {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        /* Avatar mucho más pequeño */
+        .perfil-avatar {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .perfil-avatar i {
+            font-size: 2.2rem;
+        }
+
+        .perfil-subtitle {
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .perfil-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .perfil-wrapper {
+                margin-top: 1.5rem;
+            }
+
+            .btn-volver-panel {
+                width: 100%;
+                margin-top: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar igual que el panel de cliente -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'inicio' %}">
+                <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" width="60" class="me-2 brand-logo">
+                <span class="brand-text">BiblioNet</span>
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarCliente" aria-controls="navbarCliente"
+                    aria-expanded="false" aria-label="Menú de navegación">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse justify-content-end" id="navbarCliente">
+                <ul class="navbar-nav me-4">
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="{% url 'pantalla_inicio_cliente' %}">Panel</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-custom" href="{% url 'catalogo' %}">Catálogo</a>
+                    </li>
+                </ul>
+
+                <div class="navbar-nav">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom"
+                           href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img src="{% static 'imagenes/foto_perfil.jpeg' %}" alt="Usuario"
+                                 class="rounded-circle me-2" style="width:36px;height:36px;object-fit:cover;">
+                            <span class="user-name">
+                                {{ usuario.nombre }} {{ usuario.apellido }}
+                            </span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'configuracion_cliente' %}">
+                                    <i class="fas fa-cog me-2"></i>Configuración
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{% url 'cerrar_sesion_cliente' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido -->
+    <main class="main-content">
+        <div class="container perfil-wrapper">
+
+            <!-- Card principal -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center">
+                    <div class="perfil-header">
+                        <div class="perfil-avatar">
+                            <i class="fas fa-user text-muted"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">{{ usuario.nombre }} {{ usuario.apellido }}</h5>
+                            <p class="text-muted mb-0 perfil-subtitle">
+                                Mi cuenta de lector · DNI: {{ cliente.dni }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <a href="{% url 'pantalla_inicio_cliente' %}"
+                       class="btn btn-primary btn-sm btn-volver-panel">
+                        <i class="fas fa-arrow-left me-1"></i> Volver al panel
+                    </a>
+                </div>
+
+                <div class="card-body">
+
+                    <!-- Mensajes -->
+                    {% if messages %}
+                        <div class="mb-3">
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} mb-1">
+                                    {{ message }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <h5 class="mb-3">
+                        <i class="fas fa-id-card me-2"></i> Mis datos
+                    </h5>
+
+                    <form method="post" action="{% url 'configuracion_cliente' %}">
+                        {% csrf_token %}
+
+                        <div class="row g-3">
+                            <!-- Nombre -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Nombre</label>
+                                <input type="text"
+                                       name="nombre"
+                                       class="form-control"
+                                       value="{{ usuario.nombre }}"
+                                       required>
+                            </div>
+
+                            <!-- Apellido -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Apellido</label>
+                                <input type="text"
+                                       name="apellido"
+                                       class="form-control"
+                                       value="{{ usuario.apellido }}"
+                                       required>
+                            </div>
+
+                            <!-- Correo -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Correo electrónico</label>
+                                <input type="email"
+                                       name="email"
+                                       class="form-control"
+                                       value="{{ usuario.email }}"
+                                       required>
+                            </div>
+
+                            <!-- DNI (solo lectura) -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">DNI</label>
+                                <input type="text"
+                                       class="form-control"
+                                       value="{{ cliente.dni }}"
+                                       readonly>
+                            </div>
+
+                            <!-- Dirección -->
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Dirección</label>
+                                <input type="text"
+                                       name="direccion"
+                                       class="form-control"
+                                       value="{{ cliente.direccion|default_if_none:'' }}"
+                                       placeholder="Ej: Col. Centro, calle ...">
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-1"></i> Guardar cambios
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

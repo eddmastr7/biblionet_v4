@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,20 +14,30 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" >
+            <a class="navbar-brand d-flex align-items-center">
                 <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" class="me-2 brand-logo">
                 <span class="brand-text">BiblioNet</span>
             </a>
             
             <div class="navbar-nav ms-auto">
                 <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <img src="{% static 'imagenes/foto_perfil.jpeg' %}" alt="Usuario" class="rounded-circle me-2 user-avatar">
-                        <span class="user-name">{{usuario_actual.nombre}} {{usuario_actual.apellido}}</span>
+                    <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom"
+                       href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="{% static 'imagenes/foto_perfil.jpeg' %}" alt="Usuario"
+                             class="rounded-circle me-2 user-avatar">
+                        <span class="user-name">{{ usuario_actual.nombre }} {{ usuario_actual.apellido }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-user-edit me-2"></i>Mi Perfil</a></li>
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configuración</a></li>
+                        <li>
+                            <a class="dropdown-item" href="#">
+                                <i class="fas fa-user-edit me-2"></i>Mi Perfil
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#">
+                                <i class="fas fa-cog me-2"></i>Configuración
+                            </a>
+                        </li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <!-- IMPORTANTE: cierra sesión de empleados -->
@@ -47,7 +57,7 @@
                 <div class="col-lg-8">    
                     <h1 class="catalog-title">
                         <i class="fas fa-user-tie me-2"></i>
-                        Bienvenido {{usuario_actual.nombre}}
+                        Bienvenido {{ usuario_actual.nombre }}
                     </h1>
                 </div>
             </div>
@@ -56,28 +66,22 @@
 
     <main class="main-content">
         <div class="container-fluid py-4">
-            <!-- Acciones Rápidas -->
+            <!-- Acciones Rápidas (sin botón de compra) -->
             <div class="row action-buttons">
-                <div class="col-md-3 mb-3">
+                <div class="col-md-4 mb-3">
                     <a href="{% url 'inventario' %}" class="btn btn-inventario w-100 btn-action">
                         <i class="fas fa-boxes me-2"></i>
                         Gestionar Inventario
                     </a>
                 </div>
-                <div class="col-md-3 mb-3">
+                <div class="col-md-4 mb-3">
                     <a href="#" class="btn btn-venta w-100 btn-action">
                         <i class="fas fa-cash-register me-2"></i>
                         Realizar Venta
                     </a>
                 </div>
-                <div class="col-md-3 mb-3">
-                    <a href="#" class="btn btn-compra w-100 btn-action">
-                        <i class="fas fa-shopping-cart me-2"></i>
-                        Realizar Compra
-                    </a>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <!-- AHORA ENLAZA A LA GESTIÓN DE PRÉSTAMOS -->
+                <div class="col-md-4 mb-3">
+                    <!-- Enlace a la gestión de préstamos -->
                     <a href="{% url 'gestion_prestamos' %}" class="btn btn-prestamo w-100 btn-action">
                         <i class="fas fa-book me-2"></i>
                         Gestión de préstamos
@@ -85,92 +89,186 @@
                 </div>
             </div>
             
-            <!-- Préstamos en Retraso (dummy por ahora) -->
+            <!-- Ficha del bibliotecario + préstamos que ha ejecutado -->
             <div class="card shadow-sm">
                 <div class="card-header bg-white py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            Préstamos en Retraso
+                            <i class="fas fa-id-card me-2"></i>
+                            Tu actividad como bibliotecario
                         </h5>
-                        <div class="btn-group">
-                            <button class="btn btn-outline-danger btn-sm">
-                                <i class="fas fa-filter me-2"></i>
-                                Filtrar
-                            </button>
-                        </div>
+                        <span class="badge bg-primary-subtle text-primary">
+                            Total préstamos registrados: {{ prestamos_total|default:"0" }}
+                        </span>
                     </div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Libro</th>
-                                    <th>Cliente</th>
-                                    <th>Fecha Inicio</th>
-                                    <th>Fecha Fin</th>
-                                    <th>Días de Retraso</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Ejemplo estático -->
-                                <tr class="prestamo-retraso">
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="book-cover me-3">
-                                                <i class="fas fa-book text-muted"></i>
-                                            </div>
-                                            <div>
-                                                <strong>1984</strong>
-                                                <div class="text-muted small">George Orwell</div>
-                                            </div>
+
+                <div class="card-body">
+                    <!-- Ficha de datos -->
+                    <div class="row mb-4">
+                        <div class="col-md-3 text-center mb-3 mb-md-0">
+                            <img src="{% static 'imagenes/foto_perfil.jpeg' %}"
+                                 alt="Foto de perfil"
+                                 class="rounded-circle mb-3"
+                                 style="width: 96px; height: 96px; object-fit: cover;">
+                            
+                            <div class="mb-1">
+                                <span class="badge bg-primary-subtle text-primary border border-primary">
+                                    {{ usuario_actual.rol.nombre|capfirst }}
+                                </span>
+                            </div>
+
+                            <div>
+                                {% if usuario_actual.estado == "activo" %}
+                                    <span class="badge bg-success-subtle text-success">
+                                        <i class="fas fa-circle me-1" style="font-size: 0.6rem;"></i>
+                                        Activo
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary-subtle text-secondary">
+                                        <i class="fas fa-circle me-1" style="font-size: 0.6rem;"></i>
+                                        {{ usuario_actual.estado|capfirst }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-9">
+                            <h4 class="mb-1">
+                                {{ usuario_actual.nombre }} {{ usuario_actual.apellido }}
+                            </h4>
+                            <p class="mb-1 text-muted">
+                                <i class="fas fa-envelope me-2"></i>{{ usuario_actual.email }}
+                            </p>
+                            {% if usuario_actual.fecha_creacion %}
+                            <p class="mb-1 text-muted">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                En el sistema desde: {{ usuario_actual.fecha_creacion|date:"d/m/Y" }}
+                            </p>
+                            {% endif %}
+
+                            <div class="row mt-3">
+                                <div class="col-sm-4 mb-2">
+                                    <div class="p-2 rounded-3 bg-light border">
+                                        <div class="text-muted small">Préstamos registrados</div>
+                                        <div class="fw-bold fs-5">
+                                            {{ prestamos_total|default:"0" }}
                                         </div>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="user-avatar-small me-2">
-                                                <i class="fas fa-user text-muted"></i>
-                                            </div>
-                                            <div>
-                                                <strong>Ana López</strong>
-                                                <div class="text-muted small">ID: 45678</div>
-                                            </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4 mb-2">
+                                    <div class="p-2 rounded-3 bg-light border">
+                                        <div class="text-muted small">Préstamos activos</div>
+                                        <div class="fw-bold fs-5 text-success">
+                                            {{ prestamos_activos|default:"0" }}
                                         </div>
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold">01/03/2023</div>
-                                        <div class="text-muted small">Hace 19 días</div>
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold">15/03/2023</div>
-                                        <div class="text-muted small">Hace 5 días</div>
-                                    </td>
-                                    <td>
-                                        <span class="badge badge-retraso badge-dias">
-                                            <i class="fas fa-exclamation me-1"></i>
-                                            5 días
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary" title="Detalles">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            <button class="btn btn-outline-success" title="Renovar">
-                                                <i class="fas fa-redo"></i>
-                                            </button>
-                                            <button class="btn btn-outline-danger" title="Marcar Devuelto">
-                                                <i class="fas fa-undo"></i>
-                                            </button>
+                                    </div>
+                                </div>
+                                <div class="col-sm-4 mb-2">
+                                    <div class="p-2 rounded-3 bg-light border">
+                                        <div class="text-muted small">En mora</div>
+                                        <div class="fw-bold fs-5 text-danger">
+                                            {{ prestamos_en_mora|default:"0" }}
                                         </div>
-                                    </td>
-                                </tr>
-                                <!-- Aquí luego puedes meter datos reales si quieres -->
-                            </tbody>
-                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <hr>
+
+                    <!-- Tabla de préstamos registrados por este bibliotecario -->
+                    <h6 class="mb-3">
+                        <i class="fas fa-book-reader me-2"></i>
+                        Préstamos que has registrado
+                    </h6>
+
+                    {% if prestamos_bibliotecario %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Libro</th>
+                                        <th>Cliente</th>
+                                        <th>Fecha inicio</th>
+                                        <th>Fecha devolución</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for prestamo in prestamos_bibliotecario %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="book-cover me-3">
+                                                    <i class="fas fa-book text-muted"></i>
+                                                </div>
+                                                <div>
+                                                    <strong>{{ prestamo.ejemplar.libro.titulo }}</strong>
+                                                    <div class="text-muted small">
+                                                        {{ prestamo.ejemplar.libro.autor }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="user-avatar-small me-2">
+                                                    <i class="fas fa-user text-muted"></i>
+                                                </div>
+                                                <div>
+                                                    {% if prestamo.cliente.usuario %}
+                                                        <strong>
+                                                            {{ prestamo.cliente.usuario.nombre }}
+                                                            {{ prestamo.cliente.usuario.apellido }}
+                                                        </strong>
+                                                    {% else %}
+                                                        <strong>Cliente #{{ prestamo.cliente.id }}</strong>
+                                                    {% endif %}
+                                                    <div class="text-muted small">
+                                                        DNI: {{ prestamo.cliente.dni }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold">
+                                                {{ prestamo.fecha_inicio|date:"d/m/Y" }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold">
+                                                {{ prestamo.fecha_fin|date:"d/m/Y" }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if prestamo.estado == "activo" %}
+                                                <span class="badge bg-success-subtle text-success">ACTIVO</span>
+                                            {% elif prestamo.estado == "mora" %}
+                                                <span class="badge bg-danger-subtle text-danger">EN MORA</span>
+                                            {% elif prestamo.estado == "devuelto" %}
+                                                <span class="badge bg-primary-subtle text-primary">DEVUELTO</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary-subtle text-secondary">
+                                                    {{ prestamo.estado|upper }}
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-folder-open fa-2x mb-2"></i>
+                            <p class="mb-0">
+                                Aún no has registrado préstamos. Usa el módulo
+                                <strong>Gestión de préstamos</strong> para comenzar.
+                            </p>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

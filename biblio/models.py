@@ -1,11 +1,4 @@
-﻿# This is an auto-generated Django model module.
-# You'll have to do the following manually to clean this up:
-#   * Rearrange models' order
-#   * Make sure each model has one field with primary_key=True
-#   * Make sure each ForeignKey and OneToOneField has `on_delete` set to the desired behavior
-#   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
-# Feel free to rename the models, but don't rename db_table values or field names.
-from django.db import models
+﻿from django.db import models
 
 
 class Roles(models.Model):
@@ -13,7 +6,6 @@ class Roles(models.Model):
     descripcion = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'roles'
 
 
@@ -23,7 +15,6 @@ class Permisos(models.Model):
     descripcion = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'permisos'
 
 
@@ -36,8 +27,8 @@ class RolPermiso(models.Model):
         return f"{self.rol} - {self.permiso}"
 
     class Meta:
-        managed = False
         db_table = 'rol_permiso'
+
 
 class Usuarios(models.Model):
     rol = models.ForeignKey(Roles, models.DO_NOTHING)
@@ -46,10 +37,9 @@ class Usuarios(models.Model):
     email = models.CharField(unique=True, max_length=150)
     clave = models.CharField(max_length=255)
     estado = models.CharField(max_length=20, blank=True, null=True)
-    fecha_creacion = models.DateTimeField( blank=True, null=True)
+    fecha_creacion = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'usuarios'
 
 
@@ -59,19 +49,29 @@ class Bitacora(models.Model):
     fecha = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'bitacora'
 
 
 class Clientes(models.Model):
-    usuario = models.ForeignKey(Usuarios, models.DO_NOTHING, blank=True, null=True)
-    dni = models.CharField( max_length=20)
+    usuario = models.OneToOneField(Usuarios, on_delete=models.CASCADE)
+    dni = models.CharField(max_length=20, unique=True)
     direccion = models.CharField(max_length=255, blank=True, null=True)
-    telefono = models.CharField(max_length=20, blank=True, null=True)
-    estado = models.CharField(max_length=20, blank=True, null=True)
+    estado = models.CharField(max_length=20, default="activo")
+
+    # 🔴 NUEVOS CAMPOS DE BLOQUEO
+    bloqueado = models.BooleanField(default=False)
+    motivo_bloqueo = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Ej: Mora en préstamos, incumplimiento de normas, etc."
+    )
+    fecha_bloqueo = models.DateTimeField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.usuario.nombre} {self.usuario.apellido} ({self.dni})"
 
     class Meta:
-        managed = False
         db_table = 'clientes'
 
 
@@ -87,7 +87,6 @@ class Libros(models.Model):
     fecha_registro = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'libros'
 
 
@@ -98,7 +97,6 @@ class Ejemplares(models.Model):
     estado = models.CharField(max_length=20, blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'ejemplares'
 
 
@@ -110,7 +108,6 @@ class ReglasPrestamo(models.Model):
     fecha_actualizacion = models.DateTimeField(blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'reglas_prestamo'
 
 
@@ -123,7 +120,6 @@ class Prestamos(models.Model):
     estado = models.CharField(max_length=20, blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'prestamos'
 
 
@@ -135,8 +131,8 @@ class Reservas(models.Model):
     estado = models.CharField(max_length=20, blank=True, null=True)
 
     class Meta:
-        managed = False
         db_table = 'reservas'
+
 
 class CatalogoPublico(models.Model):
     id_libro = models.IntegerField(primary_key=True)
@@ -150,7 +146,7 @@ class CatalogoPublico(models.Model):
     disponibles = models.IntegerField()
 
     class Meta:
-        managed = False
         db_table = 'catalogo_publico'
+        managed = False  # 👈 Si esto es una VIEW; si quieres tabla normal, quita esta línea
 
 
