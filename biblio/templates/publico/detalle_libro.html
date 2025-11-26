@@ -116,31 +116,43 @@
 
                                 {% if cliente %}
                                     {% if disponible %}
+                                        <!-- Reservar -->
                                         <form method="post" action="{% url 'reservar_libro' libro.id %}">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-success">
                                                 <i class="fas fa-bookmark me-1"></i> Reservar este libro
                                             </button>
                                         </form>
+
+                                        <!-- Solicitar compra -->
+                                        <form method="post" action="{% url 'solicitar_factura_libro' libro.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-file-invoice-dollar me-1"></i> Solicitar compra
+                                            </button>
+                                        </form>
                                     {% else %}
                                         <button class="btn btn-secondary" disabled>
-                                            <i class="fas fa-clock me-1"></i> No disponible para reservar
+                                            <i class="fas fa-clock me-1"></i> No disponible para reservar ni comprar
                                         </button>
                                     {% endif %}
                                 {% else %}
                                     <!-- No logueado: pide iniciar sesión -->
                                     <a href="{% url 'inicio_sesion_cliente' %}" class="btn btn-primary">
-                                        <i class="fas fa-sign-in-alt me-1"></i> Inicia sesión para reservar
+                                        <i class="fas fa-sign-in-alt me-1"></i> Inicia sesión para reservar o comprar
                                     </a>
                                 {% endif %}
                             </div>
 
+
                             <!-- Nota informativa -->
-                            <div class="mt-4 alert alert-info mb-0">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Al reservar un libro, este se asociará a tu cuenta de cliente y
-                                podrás verlo en tu <a href="{% url 'lista_reservas_clientes' %}">lista de reservas</a>.
-                            </div>
+                                <div class="mt-4 alert alert-info mb-0">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Al reservar o solicitar la compra de un libro, este se asociará a tu cuenta de cliente
+                                    y podrás verlo en tu <a href="{% url 'lista_reservas_clientes' %}">lista de reservas</a> 
+                                    y en el historial de compras cuando el bibliotecario procese la venta.
+                                </div>
+
                         </div>
                     </div>
                 </div>

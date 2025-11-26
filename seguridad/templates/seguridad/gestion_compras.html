@@ -1,0 +1,692 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Compras</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/administrador.css' %}">
+</head>
+<body>
+    <!-- Navbar simple -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'panel_administrador' %}">
+                <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" class="me-2 brand-logo">
+                <span class="brand-text">BiblioNet</span>
+            </a>
+
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom"
+                       href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                       {% if usuario_actual.foto_perfil %}
+                          <img src="{{ usuario_actual.foto_perfil.url }}"
+                            alt="Usuario"
+                            class="rounded-circle me-2 user-avatar"
+                            style="object-fit: cover;">
+                        {% else %}
+                          <img src="{% static 'imagenes/foto_perfil.jpeg' %}" alt="Usuario" class="rounded-circle me-2 user-avatar">
+                        {% endif %}
+                        <span class="user-name">{{ usuario_actual.nombre }} {{ usuario_actual.apellido }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <!-- Quitamos url 'mi_perfil' para evitar NoReverseMatch -->
+                        <li>
+                            <a class="dropdown-item" href="#">
+                                <i class="fas fa-user-edit me-2"></i>Mi Perfil
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#">
+                                <i class="fas fa-cog me-2"></i>Configuración
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'cerrar_sesion' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container-fluid costum_bg_color py-4">
+
+            <!-- Botones de navegación -->
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <a href="{% url 'panel_administrador' %}" class="btn btn-warning">
+                    <i class="fas fa-house me-1"></i> Regresar al inicio
+                </a>
+
+                <a href="{% url 'gestion_proveedores' %}" class="btn btn-warning">
+                    <i class="fas fa-truck me-1"></i> Proveedores
+                </a>
+            </div>
+
+            <!-- Mensajes -->
+            {% if messages %}
+                <div class="mb-3">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} mb-1">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-shopping-cart me-2"></i>
+                            Gestión de Compras
+                        </h5>
+
+                        <div class="flex-grow-1">
+                            <div class="row g-2 align-items-end">
+                                <!-- Formulario de filtros en una sola fila -->
+                                <form method="get" class="row g-2 align-items-end m-0 flex-grow-1">
+
+                                    <!-- Buscar por proveedor / RTN / factura -->
+                                    <div class="col-12 col-lg-4">
+                                        <label class="small mb-1">Buscar</label>
+                                        <input
+                                            type="search"
+                                            name="q"
+                                            class="form-control form-control-sm"
+                                            placeholder="Proveedor, RTN o factura..."
+                                            value="{{ query }}"
+                                        >
+                                    </div>
+
+                                    <!-- Fecha desde -->
+                                    <div class="col-6 col-lg-3">
+                                        <label class="small mb-1">Desde</label>
+                                        <input
+                                            type="date"
+                                            name="fecha_desde"
+                                            class="form-control form-control-sm"
+                                            value="{{ fecha_desde }}"
+                                        >
+                                    </div>
+
+                                    <!-- Fecha hasta -->
+                                    <div class="col-6 col-lg-3">
+                                        <label class="small mb-1">Hasta</label>
+                                        <input
+                                            type="date"
+                                            name="fecha_hasta"
+                                            class="form-control form-control-sm"
+                                            value="{{ fecha_hasta }}"
+                                        >
+                                    </div>
+
+                                    <!-- Botones buscar / reset -->
+                                    <div class="col-12 col-lg-2 d-flex gap-1 justify-content-lg-end">
+                                        <button
+                                            type="submit"
+                                            class="btn btn-outline-primary btn-sm w-50"
+                                            title="Aplicar filtros"
+                                        >
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                        <a
+                                            href="{% url 'gestion_compras' %}"
+                                            class="btn btn-outline-secondary btn-sm w-50"
+                                            title="Reiniciar filtros"
+                                        >
+                                            <i class="fas fa-rotate-right"></i>
+                                        </a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Botón agregar nueva compra -->
+                        <div class="text-lg-end">
+                            <button
+                                type="button"
+                                class="btn btn-primary btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalNuevaCompra"
+                            >
+                                <i class="fas fa-plus me-1"></i> Nueva compra
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    {% if compras.object_list %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>N.º Factura</th>
+                                    <th>Proveedor</th>
+                                    <th>RTN</th>
+                                    <th>Fecha</th>
+                                    <th>Método de pago</th>
+                                    <th>Total (L.)</th>
+                                    <th>Registrado por</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for compra in compras %}
+                                <tr>
+                                    <td>{{ compra.numero_factura }}</td>
+                                    <td>{{ compra.proveedor.nombre_comercial }}</td>
+                                    <td>{{ compra.proveedor.rtn }}</td>
+                                    <td>
+                                        {% if compra.fecha %}
+                                            {{ compra.fecha|date:"d/m/Y" }}
+                                        {% else %}
+                                            <span class="text-muted">No registrada</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ compra.metodo_pago|default:"—" }}</td>
+                                    <td>L. {{ compra.total }}</td>
+                                    <td>
+                                        {% if compra.usuario %}
+                                            {{ compra.usuario.nombre }} {{ compra.usuario.apellido }}
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <!-- Editar -->
+                                        <button
+                                            type="button"
+                                            class="btn btn-outline-primary btn-sm me-1"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalEditarCompra{{ compra.id }}"
+                                            title="Editar compra"
+                                        >
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+
+                                        <!-- Descargar comprobante PDF -->
+                                        <a
+                                            href="{% url 'comprobante_compra_pdf' compra.id %}"
+                                            class="btn btn-outline-secondary btn-sm me-1"
+                                            title="Descargar comprobante en PDF"
+                                            target="_blank"
+                                        >
+                                            <i class="fas fa-download"></i>
+                                        </a>
+
+                                        <!-- Ver detalles -->
+                                        <button
+                                            type="button"
+                                            class="btn btn-outline-info btn-sm"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalDetallesCompra{{ compra.id }}"
+                                            title="Ver detalles de libros"
+                                        >
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if compras.paginator.num_pages > 1 %}
+                    <div class="pagination-container px-3 pb-3">
+                        <div class="pagination-info">
+                            Mostrando página {{ compras.number }} de {{ compras.paginator.num_pages }}
+                        </div>
+                        <nav aria-label="Paginación de compras">
+                            <ul class="pagination mb-0">
+                                {% if compras.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?q={{ query }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}&page={{ compras.previous_page_number }}">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </span>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in compras.paginator.page_range %}
+                                    {% if num == compras.number %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?q={{ query }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}&page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if compras.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?q={{ query }}&fecha_desde={{ fecha_desde }}&fecha_hasta={{ fecha_hasta }}&page={{ compras.next_page_number }}">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </span>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No hay compras registradas</h5>
+                        <p class="text-muted">Usa el botón "Nueva compra" para registrar la primera compra.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Nueva Compra -->
+    <div class="modal fade" id="modalNuevaCompra" tabindex="-1"
+         aria-labelledby="modalNuevaCompraLabel" aria-hidden="true"
+         data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <form method="post" action="{% url 'gestion_compras' %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalNuevaCompraLabel">
+                            Registrar nueva compra
+                        </h5>
+                        <button type="button" class="btn-close"
+                                data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="agregar_compra" value="1">
+
+                        <!-- Proveedor -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-8">
+                                <label class="form-label fw-semibold">
+                                    Proveedor *
+                                </label>
+                                <select
+                                    name="proveedor_nombre"
+                                    class="form-select"
+                                    required
+                                    oninvalid="this.setCustomValidity('Debes llenar este campo')"
+                                    oninput="this.setCustomValidity('')"
+                                >
+                                    <option value="">Seleccione un proveedor...</option>
+                                    {% for proveedor in proveedores %}
+                                        <option value="{{ proveedor.nombre_comercial }}">
+                                            {{ proveedor.nombre_comercial }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div class="form-text">
+                                    Solo se muestran proveedores activos.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabla de ítems (libros) -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Libros de la compra</label>
+
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle" id="tabla-items">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 45%;">Libro</th>
+                                            <th style="width: 15%;">Cantidad</th>
+                                            <th style="width: 20%;">Costo unitario (L.)</th>
+                                            <th style="width: 15%;">Subtotal</th>
+                                            <th style="width: 5%;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>
+                                                <select
+                                                    name="libro_id[]"
+                                                    class="form-select form-select-sm"
+                                                    required
+                                                    oninvalid="this.setCustomValidity('Debes llenar este campo')"
+                                                    oninput="this.setCustomValidity('')"
+                                                >
+                                                    <option value="">Seleccione...</option>
+                                                    {% for libro in libros %}
+                                                        <option value="{{ libro.id }}">
+                                                            {{ libro.titulo }} ({{ libro.isbn }})
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input
+                                                    type="number"
+                                                    name="cantidad[]"
+                                                    class="form-control form-control-sm"
+                                                    min="1"
+                                                    required
+                                                    oninvalid="this.setCustomValidity('Debes llenar este campo')"
+                                                    oninput="this.setCustomValidity(''); actualizarSubtotal(this)"
+                                                >
+                                            </td>
+                                            <td>
+                                                <input
+                                                    type="number"
+                                                    name="costo_unitario[]"
+                                                    class="form-control form-control-sm"
+                                                    step="0.01"
+                                                    min="0.01"
+                                                    required
+                                                    oninvalid="this.setCustomValidity('Debes llenar este campo')"
+                                                    oninput="this.setCustomValidity(''); actualizarSubtotal(this)"
+                                                >
+                                            </td>
+                                            <td>
+                                                <input
+                                                    type="text"
+                                                    class="form-control form-control-sm"
+                                                    value="0.00"
+                                                    readonly
+                                                >
+                                            </td>
+                                            <td class="text-center">
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    onclick="eliminarFila(this)"
+                                                    title="Eliminar fila"
+                                                >
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <button
+                                type="button"
+                                class="btn btn-outline-success btn-sm"
+                                onclick="agregarFila()"
+                            >
+                                <i class="fas fa-plus me-1"></i> Agregar libro
+                            </button>
+
+                            <div class="mt-3 text-end">
+                                <span class="fw-semibold">Total compra (L.):</span>
+                                <span id="total-compra-display" class="fw-bold">0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Método de pago -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Método de pago *</label>
+                            <select
+                                name="metodo_pago"
+                                class="form-select"
+                                required
+                                oninvalid="this.setCustomValidity('Debes llenar este campo')"
+                                oninput="this.setCustomValidity('')"
+                            >
+                                <option value="">Seleccione...</option>
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Guardar compra
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modales EDITAR COMPRA -->
+    {% for compra in compras %}
+    <div class="modal fade" id="modalEditarCompra{{ compra.id }}" tabindex="-1" aria-labelledby="modalEditarCompraLabel{{ compra.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="post" action="{% url 'gestion_compras' %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalEditarCompraLabel{{ compra.id }}">
+                            Editar compra {{ compra.numero_factura }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="editar_compra" value="1">
+                        <input type="hidden" name="compra_id" value="{{ compra.id }}">
+
+                        <!-- Proveedor -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Proveedor *</label>
+                            <select
+                                name="proveedor_nombre"
+                                class="form-select"
+                                required
+                                oninvalid="this.setCustomValidity('Debes llenar este campo')"
+                                oninput="this.setCustomValidity('')"
+                            >
+                                <option value="">Seleccione un proveedor...</option>
+                                {% for prov in proveedores %}
+                                    <option value="{{ prov.nombre_comercial }}"
+                                        {% if prov.id == compra.proveedor.id %}selected{% endif %}
+                                    >
+                                        {{ prov.nombre_comercial }} ({{ prov.rtn }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Método de pago -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Método de pago *</label>
+                            <select
+                                name="metodo_pago"
+                                class="form-select"
+                                required
+                                oninvalid="this.setCustomValidity('Debes llenar este campo')"
+                                oninput="this.setCustomValidity('')"
+                            >
+                                <option value="">Seleccione...</option>
+                                <option value="Efectivo" {% if compra.metodo_pago == "Efectivo" %}selected{% endif %}>Efectivo</option>
+                                <option value="Tarjeta" {% if compra.metodo_pago == "Tarjeta" %}selected{% endif %}>Tarjeta</option>
+                                <option value="Transferencia" {% if compra.metodo_pago == "Transferencia" %}selected{% endif %}>Transferencia</option>
+                                <option value="Otro" {% if compra.metodo_pago == "Otro" %}selected{% endif %}>Otro</option>
+                            </select>
+                        </div>
+
+                        <div class="alert alert-info small mb-0">
+                            El número de factura y los libros de la compra no se editan desde aquí.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Guardar cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Modales DETALLES COMPRA -->
+    {% for compra in compras %}
+    <div class="modal fade" id="modalDetallesCompra{{ compra.id }}" tabindex="-1" aria-labelledby="modalDetallesCompraLabel{{ compra.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalDetallesCompraLabel{{ compra.id }}">
+                        Detalles de la compra {{ compra.numero_factura }}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-1"><strong>Proveedor:</strong> {{ compra.proveedor.nombre_comercial }} ({{ compra.proveedor.rtn }})</p>
+                    <p class="mb-1"><strong>Fecha:</strong> {% if compra.fecha %}{{ compra.fecha|date:"d/m/Y" }}{% else %}—{% endif %}</p>
+                    <p class="mb-3"><strong>Método de pago:</strong> {{ compra.metodo_pago|default:"—" }}</p>
+
+                    <h6 class="fw-semibold">Libros incluidos</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Libro</th>
+                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-end">Costo unitario (L.)</th>
+                                    <th class="text-end">Subtotal (L.)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for det in compra.detalles.all %}
+                                <tr>
+                                    <td>{{ det.libro.titulo }} ({{ det.libro.isbn }})</td>
+                                    <td class="text-center">{{ det.cantidad }}</td>
+                                    <td class="text-end">{{ det.costo_unitario }}</td>
+                                    <td class="text-end">{{ det.subtotal }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">
+                                        No hay libros registrados en esta compra.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-3 text-end">
+                        <span class="fw-semibold">Total compra (L.):</span>
+                        <span class="fw-bold">L. {{ compra.total }}</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                    >
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        function actualizarSubtotal(input) {
+            const row = input.closest("tr");
+            const cantidadInput = row.querySelector('input[name="cantidad[]"]');
+            const costoInput = row.querySelector('input[name="costo_unitario[]"]');
+            const subtotalInput = row.querySelector('td:nth-child(4) input');
+
+            const cantidad = parseFloat(cantidadInput.value) || 0;
+            const costo = parseFloat(costoInput.value) || 0;
+            const subtotal = cantidad * costo;
+
+            subtotalInput.value = subtotal.toFixed(2);
+            actualizarTotalCompra();
+        }
+
+        function actualizarTotalCompra() {
+            let total = 0;
+            document.querySelectorAll('#tabla-items tbody tr').forEach(function (row) {
+                const subtotalInput = row.querySelector('td:nth-child(4) input');
+                const sub = parseFloat(subtotalInput.value) || 0;
+                total += sub;
+            });
+            document.getElementById("total-compra-display").textContent = total.toFixed(2);
+        }
+
+        function agregarFila() {
+            const tbody = document.querySelector("#tabla-items tbody");
+            const primeraFila = tbody.querySelector("tr");
+            const nuevaFila = primeraFila.cloneNode(true);
+
+            // limpiar valores
+            nuevaFila.querySelectorAll("select, input").forEach(function (el) {
+                if (el.tagName === "SELECT") {
+                    el.selectedIndex = 0;
+                } else {
+                    el.value = "";
+                    if (el.hasAttribute("readonly")) {
+                        el.value = "0.00";
+                    }
+                }
+            });
+
+            tbody.appendChild(nuevaFila);
+        }
+
+        function eliminarFila(button) {
+            const tbody = document.querySelector("#tabla-items tbody");
+            if (tbody.rows.length === 1) {
+                // Si solo hay una fila, la limpiamos pero no la borramos
+                tbody.querySelectorAll("select, input").forEach(function (el) {
+                    if (el.tagName === "SELECT") {
+                        el.selectedIndex = 0;
+                    } else {
+                        el.value = "";
+                        if (el.hasAttribute("readonly")) {
+                            el.value = "0.00";
+                        }
+                    }
+                });
+            } else {
+                button.closest("tr").remove();
+            }
+            actualizarTotalCompra();
+        }
+    </script>
+</body>
+</html>

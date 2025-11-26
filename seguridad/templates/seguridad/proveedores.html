@@ -1,0 +1,530 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proveedores</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/administrador.css' %}">
+</head>
+<body>
+    <!-- Navbar simple -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" class="me-2 brand-logo">
+                <span class="brand-text">BiblioNet</span>
+            </a>
+
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom"
+                       href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                       {% if usuario_actual.foto_perfil %}
+                          <img src="{{ usuario_actual.foto_perfil.url }}"
+                            alt="Usuario"
+                            class="rounded-circle me-2 user-avatar"
+                            style="object-fit: cover;">
+                        {% else %}
+                          <img src="{% static 'imagenes/foto_perfil.jpeg' %}" alt="Usuario" class="rounded-circle me-2 user-avatar">
+                        {% endif %}
+                        <span class="user-name">{{ usuario_actual.nombre }} {{ usuario_actual.apellido }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <!-- SIN url 'mi_perfil' para evitar NoReverseMatch -->
+                        <li>
+                            <a class="dropdown-item" href="#">
+                                <i class="fas fa-user-edit me-2"></i>Mi Perfil
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#">
+                                <i class="fas fa-cog me-2"></i>Configuración
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'cerrar_sesion' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container-fluid costum_bg_color py-4">
+
+            <!-- Botón Volver (más visible) -->
+            <a href="{% url 'gestion_compras' %}" class="btn btn-warning mb-3">
+                <i class="fas fa-house me-1"></i> Volver
+            </a>
+
+            <!-- Mensajes -->
+            {% if messages %}
+                <div class="mb-3">
+                    {% for message in messages %}
+                        {% if 'success' in message.tags %}
+                            <div class="alert mb-1 text-white"
+                                 style="background-color:#0d6efd;border-color:#0d6efd;">
+                                {{ message }}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-{{ message.tags }} mb-1">
+                                {{ message }}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-truck me-2"></i>
+                            Proveedores
+                        </h5>
+
+                        <div class="d-flex align-items-center gap-2">
+                            <!-- Búsqueda por nombre comercial o RTN -->
+                            <form method="get" class="d-flex align-items-center">
+                                <input
+                                    type="search"
+                                    name="q"
+                                    class="form-control form-control-sm"
+                                    placeholder="Buscar por nombre comercial o RTN..."
+                                    value="{{ query }}"
+                                >
+                                <button
+                                    type="submit"
+                                    class="btn btn-outline-primary btn-sm ms-2"
+                                    title="Buscar"
+                                >
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <a
+                                    href="{% url 'gestion_proveedores' %}"
+                                    class="btn btn-outline-secondary btn-sm ms-1"
+                                    title="Reiniciar búsqueda"
+                                >
+                                    <i class="fas fa-rotate-right"></i>
+                                </a>
+                            </form>
+
+                            <!-- Botón agregar nuevo proveedor -->
+                            <button
+                                type="button"
+                                class="btn btn-primary btn-sm ms-3"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalNuevoProveedor"
+                            >
+                                <i class="fas fa-plus me-1"></i> Nuevo proveedor
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    {% if proveedores.object_list %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre comercial</th>
+                                    <th>RTN / DNI</th>
+                                    <th>Teléfono</th>
+                                    <th>Correo de contacto</th>
+                                    <th>Suministro</th>
+                                    <th>Dirección</th>
+                                    <th>Estado</th>
+                                    <th class="text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for proveedor in proveedores %}
+                                <tr>
+                                    <td>{{ proveedor.nombre_comercial }}</td>
+                                    <td>{{ proveedor.rtn }}</td>
+                                    <td>{{ proveedor.telefono|default:"—" }}</td>
+                                    <td>{{ proveedor.correo_contacto|default:"—" }}</td>
+                                    <td>{{ proveedor.suministro|default:"—" }}</td>
+                                    <td>{{ proveedor.direccion|default:"—" }}</td>
+                                    <td>
+                                        {% if proveedor.estado == "activo" %}
+                                            <span class="badge bg-success">Activo</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ proveedor.estado }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <!-- Editar -->
+                                        <button
+                                            type="button"
+                                            class="btn btn-outline-primary btn-sm me-1"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalEditarProveedor{{ proveedor.id }}"
+                                            title="Editar proveedor"
+                                        >
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    {% if proveedores.paginator.num_pages > 1 %}
+                    <div class="pagination-container px-3 pb-3">
+                        <div class="pagination-info">
+                            Mostrando página {{ proveedores.number }} de {{ proveedores.paginator.num_pages }}
+                        </div>
+                        <nav aria-label="Paginación de proveedores">
+                            <ul class="pagination mb-0">
+                                {% if proveedores.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?q={{ query }}&page={{ proveedores.previous_page_number }}">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </span>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in proveedores.paginator.page_range %}
+                                    {% if num == proveedores.number %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?q={{ query }}&page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if proveedores.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?q={{ query }}&page={{ proveedores.next_page_number }}">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </span>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-truck fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No hay proveedores registrados</h5>
+                        <p class="text-muted">Usa el botón "Nuevo proveedor" para agregar uno.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Nuevo Proveedor -->
+    <div class="modal fade" id="modalNuevoProveedor" tabindex="-1" aria-labelledby="modalNuevoProveedorLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="post" action="{% url 'gestion_proveedores' %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalNuevoProveedorLabel">
+                            Agregar nuevo proveedor
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="agregar_proveedor" value="1">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nombre comercial *</label>
+                            <input
+                                type="text"
+                                name="nombre_comercial"
+                                class="form-control"
+                                required
+                                oninvalid="this.setCustomValidity('Debes completar este campo')"
+                                oninput="this.setCustomValidity('')"
+                            >
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">RTN / DNI (14 dígitos) *</label>
+                            <input
+                                type="text"
+                                name="rtn"
+                                class="form-control"
+                                required
+                                pattern="[0-9]{14}"
+                                oninvalid="
+                                    if (this.value.trim() === '') {
+                                        this.setCustomValidity('Debes completar este campo');
+                                    } else {
+                                        this.setCustomValidity('El RTN debe contener exactamente 14 dígitos numéricos');
+                                    }
+                                "
+                                oninput="this.setCustomValidity('')"
+                            >
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Dirección *</label>
+                            <input
+                                type="text"
+                                name="direccion"
+                                class="form-control"
+                                required
+                                oninvalid="this.setCustomValidity('Debes completar este campo')"
+                                oninput="this.setCustomValidity('')"
+                            >
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Teléfono (8 dígitos, inicia con 2, 3, 8 o 9) *</label>
+                            <input
+                                type="text"
+                                name="telefono"
+                                class="form-control"
+                                required
+                                pattern="[2389][0-9]{7}"
+                                oninvalid="
+                                    if (this.value.trim() === '') {
+                                        this.setCustomValidity('Debes completar este campo');
+                                    } else {
+                                        this.setCustomValidity('El teléfono debe iniciar con 2, 3, 8 o 9 y tener 8 dígitos');
+                                    }
+                                "
+                                oninput="this.setCustomValidity('')"
+                            >
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Correo de contacto *</label>
+                            <input
+                                type="email"
+                                name="correo_contacto"
+                                class="form-control"
+                                required
+                                oninvalid="
+                                    if (this.value.trim() === '') {
+                                        this.setCustomValidity('Debes completar este campo');
+                                    } else {
+                                        this.setCustomValidity('Debes ingresar un correo válido');
+                                    }
+                                "
+                                oninput="this.setCustomValidity('')"
+                            >
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Suministro *</label>
+                            <input
+                                type="text"
+                                name="suministro"
+                                class="form-control"
+                                required
+                                oninvalid="this.setCustomValidity('Debes completar este campo')"
+                                oninput="this.setCustomValidity('')"
+                            >
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Estado *</label>
+                            <select
+                                name="estado"
+                                class="form-select"
+                                required
+                                oninvalid="this.setCustomValidity('Debes completar este campo')"
+                                oninput="this.setCustomValidity('')"
+                            >
+                                <option value="">Seleccione...</option>
+                                <option value="activo">Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Guardar proveedor
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modales de edición (uno por proveedor) -->
+    {% for proveedor in proveedores %}
+    <div class="modal fade" id="modalEditarProveedor{{ proveedor.id }}" tabindex="-1" aria-labelledby="modalEditarProveedorLabel{{ proveedor.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="post" action="{% url 'gestion_proveedores' %}">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalEditarProveedorLabel{{ proveedor.id }}">
+                            Editar proveedor
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="editar_proveedor" value="1">
+                        <input type="hidden" name="proveedor_id" value="{{ proveedor.id }}">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nombre comercial *</label>
+                            <input
+                                type="text"
+                                name="nombre_comercial"
+                                class="form-control"
+                                value="{{ proveedor.nombre_comercial }}"
+                                required
+                                oninvalid="this.setCustomValidity('Debes completar este campo')"
+                                oninput="this.setCustomValidity('')"
+                            >
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">RTN / DNI (14 dígitos) *</label>
+                            <input
+                                type="text"
+                                name="rtn"
+                                class="form-control"
+                                value="{{ proveedor.rtn }}"
+                                required
+                                pattern="[0-9]{14}"
+                                oninvalid="
+                                    if (this.value.trim() === '') {
+                                        this.setCustomValidity('Debes completar este campo');
+                                    } else {
+                                        this.setCustomValidity('El RTN debe contener exactamente 14 dígitos numéricos');
+                                    }
+                                "
+                                oninput="this.setCustomValidity('')"
+                            >
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Dirección *</label>
+                            <input
+                                type="text"
+                                name="direccion"
+                                class="form-control"
+                                value="{{ proveedor.direccion }}"
+                                required
+                                oninvalid="this.setCustomValidity('Debes completar este campo')"
+                                oninput="this.setCustomValidity('')"
+                            >
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Teléfono (8 dígitos, inicia con 2, 3, 8 o 9) *</label>
+                            <input
+                                type="text"
+                                name="telefono"
+                                class="form-control"
+                                value="{{ proveedor.telefono }}"
+                                required
+                                pattern="[2389][0-9]{7}"
+                                oninvalid="
+                                    if (this.value.trim() === '') {
+                                        this.setCustomValidity('Debes completar este campo');
+                                    } else {
+                                        this.setCustomValidity('El teléfono debe iniciar con 2, 3, 8 o 9 y tener 8 dígitos');
+                                    }
+                                "
+                                oninput="this.setCustomValidity('')"
+                            >
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Correo de contacto *</label>
+                            <input
+                                type="email"
+                                name="correo_contacto"
+                                class="form-control"
+                                value="{{ proveedor.correo_contacto }}"
+                                required
+                                oninvalid="
+                                    if (this.value.trim() === '') {
+                                        this.setCustomValidity('Debes completar este campo');
+                                    } else {
+                                        this.setCustomValidity('Debes ingresar un correo válido');
+                                    }
+                                "
+                                oninput="this.setCustomValidity('')"
+                            >
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Suministro *</label>
+                            <input
+                                type="text"
+                                name="suministro"
+                                class="form-control"
+                                value="{{ proveedor.suministro }}"
+                                required
+                                oninvalid="this.setCustomValidity('Debes completar este campo')"
+                                oninput="this.setCustomValidity('')"
+                            >
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Estado *</label>
+                            <select
+                                name="estado"
+                                class="form-select"
+                                required
+                                oninvalid="this.setCustomValidity('Debes completar este campo')"
+                                oninput="this.setCustomValidity('')"
+                            >
+                                <option value="">Seleccione...</option>
+                                <option value="activo" {% if proveedor.estado == "activo" %}selected{% endif %}>Activo</option>
+                                <option value="inactivo" {% if proveedor.estado == "inactivo" %}selected{% endif %}>Inactivo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i> Guardar cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

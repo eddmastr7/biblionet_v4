@@ -5,12 +5,22 @@ from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
 from django.utils import timezone
-from django.db import transaction
+from django.db import transaction, DatabaseError
 from django.views.decorators.csrf import csrf_protect
 from django.core.paginator import Paginator
-from .utils import actualizar_bloqueo_por_mora
 
-from biblio.models import Usuarios, Roles, Clientes, Libros, Reservas, Prestamos
+from .utils import actualizar_bloqueo_por_mora
+from seguridad.views import validar_fortaleza_contrasena
+
+from biblio.models import (
+    Usuarios,
+    Roles,
+    Clientes,
+    Libros,
+    Reservas,
+    Prestamos,
+    SolicitudVenta,
+)
 
 
 def inicio(request):
@@ -533,6 +543,146 @@ def cancelar_reserva(request, reserva_id):
     return redirect("lista_reservas_clientes")
 
 
+@csrf_protect
+def solicitar_factura_reserva(request, reserva_id):
+    """
+    El cliente pide que una reserva se facture.
+    Crea una SolicitudVenta en estado 'pendiente'
+    que verá el bibliotecario en 'Realizar Venta'.
+    """
+    # Debe estar logueado como cliente
+    if "cliente_id" not in request.session:
+        messages.error(request, "Debes iniciar sesión para solicitar una factura.")
+        return redirect("inicio_sesion_cliente")
+
+    cliente = get_object_or_404(Clientes, id=request.session["cliente_id"])
+
+    # Solo dejamos que el cliente dueño de la reserva la facture
+    reserva = get_object_or_404(Reservas, id=reserva_id, cliente=cliente)
+
+    # Solo aceptamos POST desde el botón "Facturar"
+    if request.method != "POST":
+        return redirect("lista_reservas_clientes")
+
+    # Validar que la reserva esté activa y no vencida
+    ahora = timezone.now()
+    if (
+        not reserva.estado
+        or reserva.estado.lower() != "activa"
+        or (reserva.fecha_vencimiento and reserva.fecha_vencimiento < ahora)
+    ):
+        messages.error(
+            request,
+            "Esta reserva ya no está activa o se encuentra vencida. "
+            "No es posible generar una solicitud de factura."
+        )
+        return redirect("lista_reservas_clientes")
+
+    libro = reserva.libro
+
+    # Verificar stock disponible del libro
+    if not libro.stock_total or libro.stock_total <= 0:
+        messages.error(
+            request,
+            "No hay stock disponible para este libro. "
+            "Consulta con la biblioteca antes de intentar la compra."
+        )
+        return redirect("lista_reservas_clientes")
+
+    # Evitar solicitudes duplicadas para la misma reserva
+    ya_existe = SolicitudVenta.objects.filter(
+        reserva=reserva,
+        estado__in=["pendiente", "en_proceso"],
+    ).exists()
+
+    if ya_existe:
+        messages.info(
+            request,
+            "Ya existe una solicitud de factura pendiente para esta reserva."
+        )
+        return redirect("lista_reservas_clientes")
+
+    # Crear la solicitud de venta
+    SolicitudVenta.objects.create(
+        cliente=cliente,
+        libro=libro,
+        reserva=reserva,
+        cantidad=1,
+        origen="reserva",
+        # estado queda por defecto "pendiente"
+    )
+
+    messages.success(
+        request,
+        "Tu solicitud de facturación fue enviada al área de ventas. "
+        "Un bibliotecario procesará tu compra."
+    )
+    return redirect("lista_reservas_clientes")
+
+
+@csrf_protect
+def solicitar_factura_libro(request, libro_id):
+    """
+    El cliente pide comprar un libro directamente desde el detalle.
+    Crea una SolicitudVenta en estado 'pendiente' (origen = 'detalle')
+    que verá el bibliotecario en 'Realizar Venta'.
+    """
+    # Debe estar logueado como cliente
+    if "cliente_id" not in request.session:
+        messages.error(
+            request,
+            "Debes iniciar sesión para solicitar una factura."
+        )
+        return redirect("inicio_sesion_cliente")
+
+    cliente = get_object_or_404(Clientes, id=request.session["cliente_id"])
+    libro = get_object_or_404(Libros, id=libro_id)
+
+    # Solo aceptamos POST desde el botón "Comprar / Facturar"
+    if request.method != "POST":
+        return redirect("detalle_libro", libro_id=libro.id)
+
+    # Verificar stock disponible del libro
+    if not libro.stock_total or libro.stock_total <= 0:
+        messages.error(
+            request,
+            "No hay stock disponible para este libro. "
+            "Consulta con la biblioteca antes de intentar la compra."
+        )
+        return redirect("detalle_libro", libro_id=libro.id)
+
+    # Evitar solicitudes duplicadas para este cliente y libro
+    ya_existe = SolicitudVenta.objects.filter(
+        cliente=cliente,
+        libro=libro,
+        reserva__isnull=True,               # 👈 viene desde detalle, sin reserva
+        estado__in=["pendiente", "en_proceso"],
+    ).exists()
+
+    if ya_existe:
+        messages.info(
+            request,
+            "Ya tienes una solicitud de compra pendiente para este libro."
+        )
+        return redirect("pantalla_inicio_cliente")
+
+    # Crear la solicitud de venta
+    SolicitudVenta.objects.create(
+        cliente=cliente,
+        libro=libro,
+        cantidad=1,
+        origen="detalle",  # 👈 importante para distinguir el origen
+        # estado = "pendiente" por defecto
+    )
+
+    messages.success(
+        request,
+        "Tu solicitud de compra fue enviada al área de ventas. "
+        "Un bibliotecario procesará tu venta."
+    )
+    return redirect("pantalla_inicio_cliente")
+
+
 ####### DETALLES DE LIBROS ########
 
 def detalle_libro(request, libro_id):
@@ -558,3 +708,156 @@ def detalle_libro(request, libro_id):
         "cliente": cliente,  # None si no está logueado
     }
     return render(request, "publico/detalle_libro.html", contexto)
+
+
+# ============ RECUPERAR CONTRASEÑA CLIENTE ============
+def recuperar_contrasena_cliente(request):
+    """
+    Flujo de recuperación de contraseña para CLIENTES.
+    Usa un template con pasos:
+      - step 1: pedir correo
+      - step 2: nueva contraseña
+      - step 3: éxito
+    """
+    if request.method == "POST":
+        step = request.POST.get("step", "1")
+
+        if step == "1":
+            return paso_1_verificar_email_cliente(request)
+        elif step == "2":
+            return paso_2_nueva_contrasena_cliente(request)
+
+    # GET o step no válido -> mostrar paso 1
+    return render(
+        request,
+        "publico/recuperar_contraseña_cliente.html",
+        {"step": 1},
+    )
+
+
+def paso_1_verificar_email_cliente(request):
+    """Paso 1 para clientes - verifica email"""
+    email = (request.POST.get("email") or "").strip().lower()
+
+    if not email:
+        return render(
+            request,
+            "publico/recuperar_contraseña_cliente.html",
+            {
+                "step": 1,
+                "email": email,
+                "error": "Por favor, ingresa tu correo electrónico.",
+            },
+        )
+
+    try:
+        # Buscar usuario con rol CLIENTE y activo
+        usuario = Usuarios.objects.get(
+            email=email,
+            estado="activo",
+            rol__nombre__iexact="cliente",
+        )
+
+        # Email válido, pasar al paso 2
+        return render(
+            request,
+            "publico/recuperar_contraseña_cliente.html",
+            {
+                "step": 2,
+                "email": email,
+            },
+        )
+
+    except Usuarios.DoesNotExist:
+        return render(
+            request,
+            "publico/recuperar_contraseña_cliente.html",
+            {
+                "step": 1,
+                "email": email,
+                "error": "El correo electrónico no existe o no corresponde a un cliente.",
+            },
+        )
+    except Exception:
+        return render(
+            request,
+            "publico/recuperar_contraseña_cliente.html",
+            {
+                "step": 1,
+                "email": email,
+                "error": "Error en el sistema. Por favor, intente más tarde.",
+            },
+        )
+
+
+def paso_2_nueva_contrasena_cliente(request):
+    """Paso 2 para clientes - establecer nueva contraseña"""
+    email = (request.POST.get("email") or "").strip().lower()
+    new_password = request.POST.get("new_password", "") or ""
+    confirm_password = request.POST.get("confirm_password", "") or ""
+
+    # Validaciones
+    if new_password != confirm_password:
+        return render(
+            request,
+            "publico/recuperar_contraseña_cliente.html",
+            {
+                "step": 2,
+                "email": email,
+                "error": "Las contraseñas no coinciden.",
+            },
+        )
+
+    if not validar_fortaleza_contrasena(new_password):
+        return render(
+            request,
+            "publico/recuperar_contraseña_cliente.html",
+            {
+                "step": 2,
+                "email": email,
+                "error": (
+                    "La contraseña debe tener al menos 8 caracteres, "
+                    "incluir una letra mayúscula, una minúscula, "
+                    "un número y un carácter especial."
+                ),
+            },
+        )
+
+    try:
+        # Buscar usuario con rol CLIENTE y activo
+        usuario = Usuarios.objects.get(
+            email=email,
+            estado="activo",
+            rol__nombre__iexact="cliente",
+        )
+
+        # Actualizar la contraseña (campo 'clave')
+        usuario.clave = make_password(new_password)
+        usuario.save()
+
+        # Paso 3: éxito
+        return render(
+            request,
+            "publico/recuperar_contraseña_cliente.html",
+            {"step": 3},
+        )
+
+    except Usuarios.DoesNotExist:
+        return render(
+            request,
+            "publico/recuperar_contraseña_cliente.html",
+            {
+                "step": 1,
+                "error": "Error en la recuperación. Por favor, inicia el proceso nuevamente.",
+            },
+        )
+    except DatabaseError:
+        return render(
+            request,
+            "publico/recuperar_contraseña_cliente.html",
+            {
+                "step": 2,
+                "email": email,
+                "error": "Error al guardar la nueva contraseña. Por favor, intente nuevamente.",
+            },
+        )

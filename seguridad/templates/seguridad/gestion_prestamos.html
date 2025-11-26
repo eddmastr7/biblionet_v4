@@ -76,20 +76,14 @@
                     </a>
                 </div>
                 <div class="col-md-3 mb-3">
-                    <a href="#" class="btn btn-venta w-100 btn-action">
+                    <a href="{% url 'realizar_venta' %}" class="btn btn-venta w-100 btn-action">
                         <i class="fas fa-cash-register me-2"></i>
                         Realizar Venta
                     </a>
                 </div>
                 <div class="col-md-3 mb-3">
-                    <a href="#" class="btn btn-compra w-100 btn-action">
-                        <i class="fas fa-shopping-cart me-2"></i>
-                        Realizar Compra
-                    </a>
-                </div>
-                <div class="col-md-3 mb-3">
                     <!-- Gestión de préstamos como activa -->
-                    <a href="{% url 'gestion_prestamos' %}" class="btn btn-prestamo w-100 btn-action active">
+                    <a href="{% url 'gestion_prestamos' %}" class="btn btn-prestamo w-100 btn-action">
                         <i class="fas fa-book me-2"></i>
                         Gestión de préstamos
                     </a>

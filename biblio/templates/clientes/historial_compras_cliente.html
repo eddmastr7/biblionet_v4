@@ -1,0 +1,274 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Compras - BiblioNet</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/pantalla_inicio_cliente.css' %}">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center">
+                <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" class="me-2 brand-logo">
+                <span class="brand-text">BiblioNet</span>
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom"
+                       href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <img src="{% static 'imagenes/foto_perfil.jpeg' %}" alt="Usuario"
+                             class="rounded-circle me-2 user-avatar">
+                        <span class="user-name">{{ usuario.nombre }} {{ usuario.apellido }}</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-user-edit me-2"></i>Mi Perfil</a></li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'configuracion_cliente' %}">
+                                <i class="fas fa-cog me-2"></i>Configuración
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'cerrar_sesion_cliente' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header class="header-cliente text-center">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">    
+                    <h1 class="catalog-title">
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        Historial de Compras
+                    </h1>
+                    <p class="text-white-50 mb-0">
+                        Aquí puedes revisar todas las compras que has realizado en BiblioNet.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container-fluid py-4">
+
+            <!-- Botones de navegación del cliente -->
+            <div class="row history-buttons mb-4">
+                <div class="col-md-6 mb-3">
+                    <a href="{% url 'pantalla_inicio_cliente' %}" class="btn btn-custom-1 w-100 btn-history">
+                        <i class="fas fa-home me-2"></i>
+                        Pantalla de inicio
+                    </a>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <a href="{% url 'historial_compras_cliente' %}" class="btn btn-custom-1 w-100 btn-history active">
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        Historial de Compras
+                    </a>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <a href="{% url 'lista_reservas_clientes' %}" class="btn btn-custom-2 w-100 btn-history">
+                        <i class="fas fa-bookmark me-2"></i>
+                        Lista de Reservas
+                    </a>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <a href="{% url 'historial_prestamos_cliente' %}" class="btn btn-custom-1 w-100 btn-history">
+                        <i class="fas fa-history me-2"></i>
+                        Historial de Préstamos
+                    </a>
+                </div>
+            </div>
+
+            <!-- Resumen -->
+            <div class="row mb-4">
+                <div class="col-md-4 mb-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="text-muted small">Total de compras</div>
+                            <div class="fw-bold fs-4">{{ total_compras }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="text-muted small">Total gastado (L)</div>
+                            <div class="fw-bold fs-4">
+                                L. {{ total_gastado|floatformat:2 }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-2 align-items-end">
+                        <div class="col-md-6">
+                            <label class="form-label">Buscar</label>
+                            <input
+                                type="search"
+                                name="q"
+                                class="form-control"
+                                placeholder="Buscar por ID de compra, método de pago o vendedor..."
+                                value="{{ query }}"
+                            >
+                        </div>
+                        <div class="col-md-3 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary mt-auto">
+                                <i class="fas fa-search me-1"></i> Buscar
+                            </button>
+                            <a href="{% url 'historial_compras_cliente' %}" class="btn btn-outline-secondary mt-auto">
+                                <i class="fas fa-rotate-right me-1"></i> Limpiar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tabla de compras -->
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    {% if page_obj.object_list %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Fecha</th>
+                                    <th>Libros</th>
+                                    <th>Método de pago</th>
+                                    <th>Subtotal (L)</th>
+                                    <th>Impuesto (L)</th>
+                                    <th>Total (L)</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for venta in page_obj %}
+                                <tr>
+                                    <td>#{{ venta.id }}</td>
+                                    <td>
+                                        {% if venta.fecha_venta %}
+                                            <div class="fw-bold">
+                                                {{ venta.fecha_venta|date:"d/m/Y" }}
+                                            </div>
+                                            <div class="text-muted small">
+                                                {{ venta.fecha_venta|date:"H:i" }}
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <ul class="mb-0 ps-3">
+                                            {% for detalle in venta.detalleventa_set.all %}
+                                                <li class="small">
+                                                    {{ detalle.libro.titulo }} (x{{ detalle.cantidad }})
+                                                </li>
+                                            {% empty %}
+                                                <li class="small text-muted">Sin detalle</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                    <td>{{ venta.metodo_pago }}</td>
+                                    <td>L. {{ venta.subtotal|floatformat:2 }}</td>
+                                    <td>L. {{ venta.impuesto|floatformat:2 }}</td>
+                                    <td class="fw-bold">L. {{ venta.total|floatformat:2 }}</td>
+                                    <td>
+                                        {% if venta.estado == "pagada" %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Pagada
+                                            </span>
+                                        {% elif venta.estado == "anulada" %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times me-1"></i>Anulada
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                {{ venta.estado|capfirst }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    <div class="d-flex justify-content-between align-items-center p-3 border-top">
+                        <div class="text-muted small">
+                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                        </div>
+                        <nav aria-label="Paginación de compras">
+                            <ul class="pagination mb-0">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?q={{ query }}&page={{ page_obj.previous_page_number }}">
+                                            &laquo;
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">&laquo;</span>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if num == page_obj.number %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?q={{ query }}&page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?q={{ query }}&page={{ page_obj.next_page_number }}">
+                                            &raquo;
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">&raquo;</span>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Todavía no tienes compras registradas</h5>
+                        <p class="text-muted mb-0">
+                            Cuando compres un libro en BiblioNet, verás los detalles aquí.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

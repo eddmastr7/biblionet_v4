@@ -1,0 +1,122 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Comprobante de compra</title>
+    <style>
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 11pt;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .header h2 {
+            margin: 0;
+            padding: 0;
+        }
+        .datos-generales, .datos-proveedor {
+            margin-bottom: 8px;
+        }
+        .datos-generales p, .datos-proveedor p {
+            margin: 2px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+        th, td {
+            border: 1px solid #444;
+            padding: 4px;
+        }
+        th {
+            background-color: #f0f0f0;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .total {
+            margin-top: 8px;
+            text-align: right;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>BiblioNet</h2>
+        <p>Comprobante de compra</p>
+    </div>
+
+    <div class="datos-generales">
+        <p><strong>N° factura:</strong> {{ compra.numero_factura }}</p>
+        <p><strong>Fecha de compra:</strong>
+            {% if compra.fecha %}
+                {{ compra.fecha|date:"d/m/Y" }}
+            {% else %}
+                —
+            {% endif %}
+        </p>
+        <p><strong>Método de pago:</strong> {{ compra.metodo_pago|default:"—" }}</p>
+        <p><strong>Registrado por:</strong>
+            {% if compra.usuario %}
+                {{ compra.usuario.nombre }} {{ compra.usuario.apellido }}
+            {% else %}
+                —
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="datos-proveedor">
+        <p><strong>Proveedor:</strong> {{ compra.proveedor.nombre_comercial }}</p>
+        <p><strong>RTN:</strong> {{ compra.proveedor.rtn }}</p>
+        <p><strong>Teléfono:</strong> {{ compra.proveedor.telefono|default:"—" }}</p>
+        <p><strong>Dirección:</strong> {{ compra.proveedor.direccion|default:"—" }}</p>
+    </div>
+
+    <h4>Libros de la compra</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>Libro</th>
+                <th class="text-center">Cantidad</th>
+                <th class="text-right">Costo unitario (L.)</th>
+                <th class="text-right">Subtotal (L.)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for det in compra.detalles.all %}
+            <tr>
+                <td>
+                    {{ det.libro.titulo }}
+                    {% if det.libro.isbn %}
+                        ({{ det.libro.isbn }})
+                    {% endif %}
+                </td>
+                <td class="text-center">{{ det.cantidad }}</td>
+                <td class="text-right">{{ det.costo_unitario }}</td>
+                <td class="text-right">{{ det.subtotal }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center">
+                    No hay libros registrados en esta compra.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p class="total">
+        Total compra (L.): L. {{ compra.total }}
+    </p>
+
+</body>
+</html>

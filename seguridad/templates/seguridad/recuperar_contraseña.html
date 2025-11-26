@@ -1,0 +1,284 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>
+    {% if primer_ingreso %}Establecer Contraseña{% else %}Recuperar Contraseña{% endif %} | BiblioNet
+  </title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static 'css/login_empleados.css' %}">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="{% url 'inicio' %}">
+        <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" width="60" class="me-2 brand-logo">
+        <span class="brand-text">BiblioNet</span>
+      </a>
+
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+              data-bs-target="#navbarPrincipal" aria-controls="navbarPrincipal"
+              aria-expanded="false" aria-label="Menú de navegación">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse justify-content-end" id="navbarPrincipal">
+        <ul class="navbar-nav me-4">
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom" href="{% url 'inicio' %}">Inicio</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom" href="{% url 'catalogo' %}">Catálogo</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-link-custom" href="{% url 'acerca_de' %}">Acerca de</a>
+          </li>
+        </ul>
+
+        <div class="d-flex align-items-center">
+          <a href="{% url 'inicio_sesion' %}" class="btn btn-outline-light btn-nav me-2">Iniciar sesión</a>
+          <a href="{% url 'registro_cliente' %}" class="btn btn-accent">Registrarse</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="login-container d-flex align-items-center justify-content-center min-vh-100">
+    <div class="login-card shadow-lg">
+      <div class="text-center mb-4">
+        <img src="{% static 'imagenes/logo.jpg' %}" alt="Logo BiblioNet" width="90" class="mb-2 rounded">
+        <h3 class="fw-bold text-primary">BiblioNet</h3>
+        <p class="text-muted">
+          {% if primer_ingreso %}
+            Establecer contraseña - Primer ingreso
+          {% else %}
+            Recuperación de contraseña para empleados
+          {% endif %}
+        </p>
+      </div>
+
+      {% if primer_ingreso and step == 1 %}
+      <div class="alert alert-warning text-center">
+        <strong>¡Primer ingreso!</strong> Debes establecer tu contraseña para continuar.
+      </div>
+      {% endif %}
+
+      {# PASO 1: Verificar correo (sin rol) #}
+      {% if step == 1 %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="step" value="1">
+        {% if primer_ingreso %}
+          <input type="hidden" name="primer_ingreso" value="1">
+        {% endif %}
+
+        <div class="mb-3">
+          <label for="email" class="form-label fw-semibold">Correo electrónico</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              class="form-control"
+              placeholder="ejemplo@biblionet.com"
+              required
+              value="{{ email }}"
+              {% if primer_ingreso %}readonly{% endif %}
+            >
+          </div>
+          <div class="form-text">
+            {% if primer_ingreso %}
+              Tu correo electrónico registrado en el sistema.
+            {% else %}
+              Ingresa el correo electrónico asociado a tu cuenta de empleado.
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="d-grid mb-3">
+          <button type="submit" class="btn btn-primary btn-lg fw-bold">
+            <i class="fas fa-arrow-right me-2"></i>Continuar
+          </button>
+        </div>
+
+        {% if error %}
+          <div class="alert alert-danger text-center py-2">
+            {{ error }}
+          </div>
+        {% endif %}
+
+        {% if not primer_ingreso %}
+        <div class="text-center">
+          <a href="{% url 'inicio_sesion' %}" class="text-decoration-none">
+            <i class="fas fa-arrow-left me-1"></i>Volver al inicio de sesión
+          </a>
+        </div>
+        {% endif %}
+      </form>
+      {% endif %}
+
+      {# PASO 2: Nueva contraseña #}
+      {% if step == 2 %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="step" value="2">
+        <input type="hidden" name="email" value="{{ email }}">
+        {% if primer_ingreso %}
+          <input type="hidden" name="primer_ingreso" value="1">
+        {% endif %}
+
+        <div class="mb-3">
+          <label for="new_password" class="form-label fw-semibold">Nueva contraseña</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+            <input
+              type="password"
+              id="new_password"
+              name="new_password"
+              class="form-control"
+              placeholder="********"
+              required
+            >
+          </div>
+          <div class="form-text">
+            La contraseña debe tener al menos 8 caracteres, incluir una letra mayúscula,
+            una minúscula, un número y un carácter especial.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="confirm_password" class="form-label fw-semibold">Confirmar contraseña</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+            <input
+              type="password"
+              id="confirm_password"
+              name="confirm_password"
+              class="form-control"
+              placeholder="********"
+              required
+            >
+          </div>
+        </div>
+
+        <div class="d-grid mb-3">
+          <button type="submit" class="btn btn-primary btn-lg fw-bold">
+            <i class="fas fa-save me-2"></i>
+            {% if primer_ingreso %}Establecer contraseña{% else %}Guardar nueva contraseña{% endif %}
+          </button>
+        </div>
+
+        {% if error %}
+          <div class="alert alert-danger text-center py-2">
+            {{ error }}
+          </div>
+        {% endif %}
+
+        <div class="text-center">
+          <a href="{% url 'recuperar_contrasena_empleado' %}{% if primer_ingreso %}?email={{ email }}&primer_ingreso=1{% endif %}"
+             class="text-decoration-none">
+            <i class="fas fa-arrow-left me-1"></i>Volver atrás
+          </a>
+        </div>
+      </form>
+      {% endif %}
+
+      {# PASO 3: Confirmación #}
+      {% if step == 3 %}
+      <div class="text-center">
+        <div class="mb-4">
+          <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+        </div>
+        <h4 class="fw-bold text-success mb-3">
+          {% if mensaje_especial %}
+            {{ mensaje_especial }}
+          {% else %}
+            ¡Contraseña actualizada!
+          {% endif %}
+        </h4>
+        <p class="text-muted mb-4">
+          {% if mensaje_especial %}
+            Tu contraseña ha sido establecida correctamente.
+          {% else %}
+            Tu contraseña ha sido restablecida correctamente.
+          {% endif %}
+          Ahora puedes iniciar sesión con tu nueva contraseña.
+        </p>
+        <div class="d-grid mb-3">
+          <a href="{% url 'inicio_sesion' %}" class="btn btn-success btn-lg fw-bold">
+            <i class="fas fa-sign-in-alt me-2"></i>Iniciar sesión
+          </a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer-custom">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-4 mb-4">
+          <div class="footer-brand">
+            <img src="{% static 'imagenes/logo.jpg' %}" alt="BiblioNet" width="40" class="me-2">
+            <span class="footer-brand-text">BiblioNet</span>
+          </div>
+          <p class="footer-description">
+            Tu biblioteca digital de confianza con miles de títulos disponibles.
+            Llevamos la magia de la lectura a tu pantalla.
+          </p>
+        </div>
+
+        <div class="col-lg-2 col-md-4 mb-4">
+          <h5 class="footer-title">Enlaces</h5>
+          <ul class="footer-links">
+            <li><a href="{% url 'inicio' %}">Inicio</a></li>
+            <li><a href="{% url 'catalogo' %}">Catálogo</a></li>
+            <li><a href="{% url 'acerca_de' %}">Acerca de</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-3 col-md-4 mb-4">
+          <h5 class="footer-title">Categorías</h5>
+          <ul class="footer-links">
+            <li><a href="{% url 'catalogo' %}">Fantasía</a></li>
+            <li><a href="{% url 'catalogo' %}?q=terror">Terror</a></li>
+            <li><a href="{% url 'catalogo' %}?q=suspenso">Suspenso</a></li>
+            <li><a href="{% url 'catalogo' %}?q=romance">Romance</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-3 col-md-4 mb-4">
+          <h5 class="footer-title">Contacto</h5>
+          <div class="footer-contact">
+            <p>📧 info@biblionet.com</p>
+            <p>📞 +1 234 567 890</p>
+            <p>📍 Calle Libros 123, Ciudad</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div class="row align-items-center">
+          <div class="col-md-6">
+            <p class="copyright">&copy; 2025 BiblioNet. Todos los derechos reservados.</p>
+          </div>
+          <div class="col-md-6 text-md-end">
+            <div class="footer-legal">
+              <a href="#">Política de privacidad</a>
+              <a href="#">Términos de servicio</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

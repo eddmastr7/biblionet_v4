@@ -7,18 +7,17 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     ports:
       - "8000:8000"
-    # Variables de entorno que usa tu settings.py
     environment:
       SECRET_KEY: "biblio1"
       DEBUG: "True"
       DB_NAME: "biblionet"
       DB_USER: "biblio"
       DB_PASSWORD: "Proyecto1"
-      DB_HOST: "db"             # 👈 IMPORTANTE: apunta al servicio db
+      DB_HOST: "db"
       DB_PORT: "3306"
       TIME_ZONE: "America/Tegucigalpa"
     volumes:
-      - .:/app                  # Monta tu código local dentro del contenedor (modo dev)
+      - .:/app
     depends_on:
       - db
 
@@ -32,9 +31,23 @@ services:
       MYSQL_PASSWORD: "Proyecto1"
       MYSQL_ROOT_PASSWORD: "rootpass"
     ports:
-      - "3306"             # Puerto 3307 en tu máquina -> 3306 en el contenedor
+      - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: biblionet_v3_pma
+    restart: always
+    environment:
+      PMA_HOST: db
+      PMA_USER: "biblio"
+      PMA_PASSWORD: "Proyecto1"
+
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
 
 volumes:
   db_data:
