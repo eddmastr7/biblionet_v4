@@ -24,7 +24,6 @@ from biblio.models import (
 
 
 def inicio(request):
-    # Detectar si hay cliente logueado por sesión
     cliente = None
     if request.session.get("cliente_id"):
         try:
@@ -38,57 +37,54 @@ def inicio(request):
 
 
 def _obtener_cliente_sesion(request):
-    """
-    Devuelve (cliente, usuario_cliente) si hay cliente logueado en la sesión,
-    si no, (None, None).
-    """
     cliente = None
     usuario_cliente = None
 
     cliente_id = request.session.get("cliente_id")
     if cliente_id:
         try:
-            cliente = Clientes.objects.select_related("usuario").get(
-                id=cliente_id,
-                estado__iexact="activo",
-            )
+            # 👉 SIN filtro por estado, así también vienen los bloqueados/inactivos
+            cliente = Clientes.objects.select_related("usuario").get(id=cliente_id)
             usuario_cliente = cliente.usuario
         except Clientes.DoesNotExist:
             pass
 
     return cliente, usuario_cliente
 
-
 def catalogo(request):
-    # ⬇️ info de cliente logueado (según nuestra sesión propia)
-    cliente, usuario_cliente = _obtener_cliente_sesion(request)
+    cliente = None
+    usuario_cliente = None
+
+    cliente_id = request.session.get("cliente_id")
+    if cliente_id:
+        try:
+            cliente = Clientes.objects.select_related("usuario").get(id=cliente_id)
+            usuario_cliente = cliente.usuario  # nombre del FK al modelo Usuarios
+        except Clientes.DoesNotExist:
+            cliente = None
+            usuario_cliente = None
 
     q = (request.GET.get("q") or "").strip()
     categoria = (request.GET.get("categoria") or "").strip()
     estado = (request.GET.get("estado") or "").strip()
     orden = (request.GET.get("orden") or "recientes").strip()
 
-    # Base
     libros_qs = Libros.objects.all()
 
-    # Buscar por título o autor
     if q:
         libros_qs = (
             libros_qs.filter(titulo__icontains=q)
             | libros_qs.filter(autor__icontains=q)
         ).distinct()
 
-    # Filtrar por categoría (sin perder lo anterior)
     if categoria:
         libros_qs = libros_qs.filter(categoria__icontains=categoria)
 
-    # Filtrar por estado usando stock_total directo
     if estado == "disponible":
         libros_qs = libros_qs.filter(stock_total__gt=0)
     elif estado == "prestado":
         libros_qs = libros_qs.filter(stock_total__lte=0)
 
-    # Orden
     if orden == "titulo_asc":
         libros_qs = libros_qs.order_by("titulo")
     elif orden == "titulo_desc":
@@ -112,7 +108,6 @@ def catalogo(request):
         "categoria": categoria,
         "estado": estado,
         "orden": orden,
-        # ⬇️ para que el template sepa si hay cliente logueado
         "cliente": cliente,
         "usuario_cliente": usuario_cliente,
     }
@@ -123,7 +118,6 @@ def catalogo(request):
 def acerca_de(request):
     clientes_activos = Clientes.objects.filter(estado__iexact="activo").count()
 
-    # Detectar si hay cliente logueado
     cliente = None
     if request.session.get("cliente_id"):
         try:
@@ -143,7 +137,6 @@ def acerca_de(request):
 
 def _password_ok(raw, stored):
     stored = stored or ""
-    # Detecta hash común de Django
     if stored.startswith(("pbkdf2_", "argon2$", "bcrypt$")):
         return check_password(raw, stored)
     return raw == stored
@@ -161,7 +154,6 @@ def registro_cliente(request):
         password = form_data.get("password", "")
         confirm = form_data.get("confirm_password", "")
 
-        # Validaciones mínimas - usando messages para errores
         if not all([nombre, apellido, email, dni, password, confirm]):
             messages.error(request, "Completa todos los campos obligatorios.")
             return render(request, "publico/registro_cliente.html", {"form": form_data})
@@ -185,7 +177,6 @@ def registro_cliente(request):
             messages.error(request, "Ya existe un cliente registrado con ese DNI.")
             return render(request, "publico/registro_cliente.html", {"form": form_data})
 
-        # Crear usuario cliente
         try:
             with transaction.atomic():
                 rol, _ = Roles.objects.get_or_create(nombre="cliente")
@@ -202,7 +193,7 @@ def registro_cliente(request):
                 cliente = Clientes.objects.create(
                     usuario=usuario,
                     dni=dni,
-                    direccion=email,  # por ahora reusamos el correo como dirección
+                    direccion=email,
                     estado="activo",
                 )
 
@@ -222,13 +213,7 @@ def registro_cliente(request):
 
 
 def inicio_sesion_cliente(request):
-    """
-    Login de clientes usando la tabla Usuarios (campo 'clave').
-    - Busca usuario por email y estado='activo'
-    - Valida contraseña (soporta texto plano o hash pbkdf2/bcrypt/argon2)
-    - Verifica que exista un Cliente asociado
-    - Guarda datos básicos en sesión y redirige a pantalla_inicio_cliente
-    """
+    
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
@@ -237,7 +222,6 @@ def inicio_sesion_cliente(request):
             contexto = {"error": "Debes ingresar correo y contraseña."}
             return render(request, "publico/login_cliente.html", contexto)
 
-        # 1) Buscar usuario por email
         try:
             usuario = Usuarios.objects.get(
                 email__iexact=email,
@@ -247,7 +231,6 @@ def inicio_sesion_cliente(request):
             contexto = {"error": "Correo o contraseña incorrectos."}
             return render(request, "publico/login_cliente.html", contexto)
 
-        # 2) Tomar la contraseña desde el campo 'clave'
         clave_db = getattr(usuario, "clave", None)
 
         if not clave_db:
@@ -259,10 +242,8 @@ def inicio_sesion_cliente(request):
             }
             return render(request, "publico/login_cliente.html", contexto)
 
-        # 3) Verificar contraseña
         password_ok = False
 
-        # Si parece hash de Django (pbkdf2_ / argon2 / bcrypt), usamos check_password
         if (
             isinstance(clave_db, str)
             and (
@@ -273,14 +254,12 @@ def inicio_sesion_cliente(request):
         ):
             password_ok = check_password(password, clave_db)
         else:
-            # Caso simple: se guarda en texto plano
             password_ok = (password == clave_db)
 
         if not password_ok:
             contexto = {"error": "Correo o contraseña incorrectos."}
             return render(request, "publico/login_cliente.html", contexto)
 
-        # 4) Verificar que ese usuario tenga un Cliente asociado
         cliente = Clientes.objects.filter(usuario=usuario).first()
         if not cliente:
             contexto = {
@@ -291,7 +270,6 @@ def inicio_sesion_cliente(request):
             }
             return render(request, "publico/login_cliente.html", contexto)
 
-        # 5) Guardar datos en sesión (el bloqueo lo usamos SOLO para reservas/préstamos)
         request.session["cliente_id"] = cliente.id
         request.session["cliente_nombre"] = usuario.nombre
         request.session["cliente_email"] = usuario.email
@@ -299,7 +277,6 @@ def inicio_sesion_cliente(request):
 
         return redirect("pantalla_inicio_cliente")
 
-    # GET: solo mostrar el formulario
     return render(request, "publico/login_cliente.html")
 
 
@@ -315,7 +292,6 @@ def configuracion_cliente(request):
         messages.error(request, "Debes iniciar sesión para acceder a esta sección.")
         return redirect("inicio_sesion_cliente")
 
-    # Traemos cliente + su usuario asociado
     cliente = get_object_or_404(
         Clientes.objects.select_related("usuario"),
         id=request.session["cliente_id"],
@@ -328,11 +304,10 @@ def configuracion_cliente(request):
         email = (request.POST.get("email") or "").strip().lower()
         direccion = (request.POST.get("direccion") or "").strip()
 
-        # Validación básica
         if not (nombre and apellido and email):
             messages.error(request, "Nombre, apellido y correo son obligatorios.")
         else:
-            # Validar que el correo no esté usado por otro usuario
+
             email_en_uso = (
                 Usuarios.objects.filter(email__iexact=email)
                 .exclude(id=usuario.id)
@@ -341,7 +316,6 @@ def configuracion_cliente(request):
             if email_en_uso:
                 messages.error(request, "El correo ingresado ya está en uso por otro usuario.")
             else:
-                # Guardar cambios
                 usuario.nombre = nombre
                 usuario.apellido = apellido
                 usuario.email = email
@@ -350,7 +324,6 @@ def configuracion_cliente(request):
                 cliente.direccion = direccion
                 cliente.save()
 
-                # Refrescar datos básicos en la sesión (si los usas)
                 request.session["cliente_nombre"] = usuario.nombre
                 request.session["cliente_email"] = usuario.email
 
@@ -365,7 +338,7 @@ def configuracion_cliente(request):
 
 
 def pantalla_inicio_cliente(request):
-    # Verificar que el cliente está logueado
+
     if "cliente_id" not in request.session:
         messages.error(request, "Debes iniciar sesión")
         return redirect("inicio_sesion_cliente")
@@ -388,19 +361,13 @@ def pantalla_inicio_cliente(request):
 
 
 def cerrar_sesion_cliente(request):
-    """
-    Cierra la sesión del cliente (limpia la sesión) 
-    y lo regresa a la página de inicio pública.
-    """
-    request.session.flush()  # borra todos los datos de la sesión
+
+    request.session.flush()
     messages.success(request, "Has cerrado sesión correctamente.")
-    return redirect("inicio")  # o "inicio_sesion_cliente" si quieres mandarlo al login
+    return redirect("inicio")
 
 
 def lista_reservas_clientes(request):
-    """
-    Muestra las reservas activas del cliente logueado.
-    """
     if "cliente_id" not in request.session:
         messages.error(request, "Debes iniciar sesión para ver tus reservas.")
         return redirect("inicio_sesion_cliente")
@@ -424,17 +391,12 @@ def lista_reservas_clientes(request):
 
 
 def historial_prestamos_cliente(request):
-    """
-    Muestra al cliente todos sus préstamos:
-    - pestaña de préstamos activos
-    - pestaña de historial (devueltos, vencidos, etc.)
-    """
     if "cliente_id" not in request.session:
         messages.error(request, "Debes iniciar sesión para ver tu historial de préstamos.")
         return redirect("inicio_sesion_cliente")
 
     cliente = get_object_or_404(Clientes, id=request.session["cliente_id"])
-    usuario = cliente.usuario  # FK hacia Usuarios
+    usuario = cliente.usuario
 
     prestamos_qs = (
         Prestamos.objects
@@ -457,11 +419,7 @@ def historial_prestamos_cliente(request):
 
 @csrf_protect
 def reservar_libro(request, libro_id):
-    """
-    Crea una reserva para el cliente logueado sobre el libro indicado.
-    Luego redirige a la lista de reservas del cliente.
-    """
-    # Verificar que el cliente esté logueado (usamos la sesión, no auth de Django)
+
     if "cliente_id" not in request.session:
         messages.error(request, "Debes iniciar sesión para reservar un libro.")
         return redirect("inicio_sesion_cliente")
@@ -469,8 +427,8 @@ def reservar_libro(request, libro_id):
     cliente = get_object_or_404(Clientes, id=request.session["cliente_id"])
     libro = get_object_or_404(Libros, id=libro_id)
 
-    # 🔒 Bloquear reservas de clientes con mora o bloqueo administrativo
-    if actualizar_bloqueo_por_mora(cliente):
+    # 🔴 Bloqueo por estado manual (admin) o por mora
+    if getattr(cliente, "bloqueado", False) or actualizar_bloqueo_por_mora(cliente):
         messages.error(
             request,
             "No puedes reservar libros porque tu cuenta está bloqueada "
@@ -479,11 +437,9 @@ def reservar_libro(request, libro_id):
         )
         return redirect("lista_reservas_clientes")
 
-    # Solo aceptamos POST desde el formulario del catálogo/detalle
     if request.method != "POST":
         return redirect("detalle_libro", libro_id=libro.id)
 
-    # Evitar reservas duplicadas activas para el mismo libro y cliente
     ya_tiene_reserva = Reservas.objects.filter(
         cliente=cliente,
         libro=libro,
@@ -495,7 +451,7 @@ def reservar_libro(request, libro_id):
         return redirect("lista_reservas_clientes")
 
     ahora = timezone.now()
-    fecha_vencimiento = ahora + timedelta(days=2)  # ajusta los días si quieres
+    fecha_vencimiento = ahora + timedelta(days=2)
 
     Reservas.objects.create(
         cliente=cliente,
@@ -509,6 +465,7 @@ def reservar_libro(request, libro_id):
     return redirect("lista_reservas_clientes")
 
 
+
 @csrf_protect
 def cancelar_reserva(request, reserva_id):
     """
@@ -518,20 +475,17 @@ def cancelar_reserva(request, reserva_id):
         messages.error(request, "Debes iniciar sesión para gestionar tus reservas.")
         return redirect("inicio_sesion_cliente")
 
-    # Solo aceptamos POST
     if request.method != "POST":
         return redirect("lista_reservas_clientes")
 
     cliente = get_object_or_404(Clientes, id=request.session["cliente_id"])
 
-    # Solo puede cancelar reservas que sean suyas
     reserva = get_object_or_404(
         Reservas,
         id=reserva_id,
         cliente=cliente,
     )
 
-    # Si ya no está activa, no hacemos nada
     if reserva.estado and reserva.estado.lower() != "activa":
         messages.info(request, "Esta reserva ya no se encuentra activa.")
         return redirect("lista_reservas_clientes")
@@ -545,26 +499,18 @@ def cancelar_reserva(request, reserva_id):
 
 @csrf_protect
 def solicitar_factura_reserva(request, reserva_id):
-    """
-    El cliente pide que una reserva se facture.
-    Crea una SolicitudVenta en estado 'pendiente'
-    que verá el bibliotecario en 'Realizar Venta'.
-    """
-    # Debe estar logueado como cliente
+
     if "cliente_id" not in request.session:
         messages.error(request, "Debes iniciar sesión para solicitar una factura.")
         return redirect("inicio_sesion_cliente")
 
     cliente = get_object_or_404(Clientes, id=request.session["cliente_id"])
 
-    # Solo dejamos que el cliente dueño de la reserva la facture
     reserva = get_object_or_404(Reservas, id=reserva_id, cliente=cliente)
 
-    # Solo aceptamos POST desde el botón "Facturar"
     if request.method != "POST":
         return redirect("lista_reservas_clientes")
 
-    # Validar que la reserva esté activa y no vencida
     ahora = timezone.now()
     if (
         not reserva.estado
@@ -580,7 +526,6 @@ def solicitar_factura_reserva(request, reserva_id):
 
     libro = reserva.libro
 
-    # Verificar stock disponible del libro
     if not libro.stock_total or libro.stock_total <= 0:
         messages.error(
             request,
@@ -589,7 +534,6 @@ def solicitar_factura_reserva(request, reserva_id):
         )
         return redirect("lista_reservas_clientes")
 
-    # Evitar solicitudes duplicadas para la misma reserva
     ya_existe = SolicitudVenta.objects.filter(
         reserva=reserva,
         estado__in=["pendiente", "en_proceso"],
@@ -602,14 +546,12 @@ def solicitar_factura_reserva(request, reserva_id):
         )
         return redirect("lista_reservas_clientes")
 
-    # Crear la solicitud de venta
     SolicitudVenta.objects.create(
         cliente=cliente,
         libro=libro,
         reserva=reserva,
         cantidad=1,
         origen="reserva",
-        # estado queda por defecto "pendiente"
     )
 
     messages.success(
@@ -622,12 +564,7 @@ def solicitar_factura_reserva(request, reserva_id):
 
 @csrf_protect
 def solicitar_factura_libro(request, libro_id):
-    """
-    El cliente pide comprar un libro directamente desde el detalle.
-    Crea una SolicitudVenta en estado 'pendiente' (origen = 'detalle')
-    que verá el bibliotecario en 'Realizar Venta'.
-    """
-    # Debe estar logueado como cliente
+    
     if "cliente_id" not in request.session:
         messages.error(
             request,
@@ -638,11 +575,9 @@ def solicitar_factura_libro(request, libro_id):
     cliente = get_object_or_404(Clientes, id=request.session["cliente_id"])
     libro = get_object_or_404(Libros, id=libro_id)
 
-    # Solo aceptamos POST desde el botón "Comprar / Facturar"
     if request.method != "POST":
         return redirect("detalle_libro", libro_id=libro.id)
 
-    # Verificar stock disponible del libro
     if not libro.stock_total or libro.stock_total <= 0:
         messages.error(
             request,
@@ -651,11 +586,10 @@ def solicitar_factura_libro(request, libro_id):
         )
         return redirect("detalle_libro", libro_id=libro.id)
 
-    # Evitar solicitudes duplicadas para este cliente y libro
     ya_existe = SolicitudVenta.objects.filter(
         cliente=cliente,
         libro=libro,
-        reserva__isnull=True,               # 👈 viene desde detalle, sin reserva
+        reserva__isnull=True,
         estado__in=["pendiente", "en_proceso"],
     ).exists()
 
@@ -666,13 +600,11 @@ def solicitar_factura_libro(request, libro_id):
         )
         return redirect("pantalla_inicio_cliente")
 
-    # Crear la solicitud de venta
     SolicitudVenta.objects.create(
         cliente=cliente,
         libro=libro,
         cantidad=1,
-        origen="detalle",  # 👈 importante para distinguir el origen
-        # estado = "pendiente" por defecto
+        origen="detalle",
     )
 
     messages.success(
@@ -705,20 +637,14 @@ def detalle_libro(request, libro_id):
     contexto = {
         "libro": libro,
         "disponible": disponible,
-        "cliente": cliente,  # None si no está logueado
+        "cliente": cliente,
     }
     return render(request, "publico/detalle_libro.html", contexto)
 
 
 # ============ RECUPERAR CONTRASEÑA CLIENTE ============
 def recuperar_contrasena_cliente(request):
-    """
-    Flujo de recuperación de contraseña para CLIENTES.
-    Usa un template con pasos:
-      - step 1: pedir correo
-      - step 2: nueva contraseña
-      - step 3: éxito
-    """
+
     if request.method == "POST":
         step = request.POST.get("step", "1")
 
@@ -727,7 +653,6 @@ def recuperar_contrasena_cliente(request):
         elif step == "2":
             return paso_2_nueva_contrasena_cliente(request)
 
-    # GET o step no válido -> mostrar paso 1
     return render(
         request,
         "publico/recuperar_contraseña_cliente.html",

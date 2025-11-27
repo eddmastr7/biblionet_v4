@@ -425,10 +425,6 @@ def gestion_clientes(request):
 
 @requerir_rol("administrador")
 def bloquear_cliente(request, cliente_id):
-    """
-    Marca a un cliente como bloqueado.
-    Se usa desde la tabla con un enlace + confirm() en el front.
-    """
     try:
         usuario_actual = Usuarios.objects.select_related("rol").get(
             id=request.session.get("id_usuario")
@@ -588,6 +584,8 @@ def inventario(request):
     except Usuarios.DoesNotExist:
         return redirect("cerrar_sesion")
 
+    editorial_preseleccionada = (request.GET.get("editorial") or "").strip()
+
     if request.method == "POST":
 
         if "agregar_libro" in request.POST:
@@ -642,6 +640,11 @@ def inventario(request):
             )
 
             messages.success(request, f"Libro '{libro.titulo}' agregado correctamente.")
+
+            if editorial:
+                url = f"{reverse('inventario')}?editorial={editorial}"
+                return redirect(url)
+
             return redirect("inventario")
 
         if "editar_libro" in request.POST:
@@ -696,6 +699,15 @@ def inventario(request):
             | Q(categoria__icontains=query)
         )
 
+    editoriales = (
+        Libros.objects
+        .exclude(editorial__isnull=True)
+        .exclude(editorial__exact="")
+        .values_list("editorial", flat=True)
+        .distinct()
+        .order_by("editorial")
+    )
+
     paginator = Paginator(libros_qs, 10)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -704,8 +716,11 @@ def inventario(request):
         "usuario_actual": usuario_actual,
         "page_obj": page_obj,
         "query": query,
+        "editoriales": editoriales,
+        "editorial_preseleccionada": editorial_preseleccionada,
     }
     return render(request, "seguridad/inventario.html", contexto)
+
 
 @requerir_rol("bibliotecario")
 def gestion_prestamos(request):
@@ -2105,7 +2120,6 @@ def gestion_compras(request):
     }
 
     return render(request, "seguridad/gestion_compras.html", context)
-
 
 
 @requerir_rol("administrador")

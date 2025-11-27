@@ -73,6 +73,10 @@
             display: block;
             object-fit: cover;
         }
+
+        .badge-bloqueado {
+            background-color: #dc3545;
+        }
     </style>
 </head>
 <body>
@@ -105,32 +109,57 @@
 
                 <div class="d-flex align-items-center">
                     {% if cliente %}
-                        <!-- Cliente logueado vía sesión propia -->
-                        <div class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom" href="#" role="button" data-bs-toggle="dropdown">
-                                <span class="user-name">
-                                    Hola, {{ usuario_cliente.nombre }} {{ usuario_cliente.apellido }}
-                                </span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <a class="dropdown-item" href="{% url 'pantalla_inicio_cliente' %}">
-                                        Mi Panel
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="{% url 'lista_reservas_clientes' %}">
-                                        Mis Reservas
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item text-danger" href="{% url 'cerrar_sesion_cliente' %}">
-                                        Cerrar Sesión
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
+                        {% if cliente.bloqueado %}
+                            <!-- Cliente logueado pero bloqueado -->
+                            <div class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom" href="#" role="button" data-bs-toggle="dropdown">
+                                    <span class="user-name">
+                                        Hola, {{ usuario_cliente.nombre }} {{ usuario_cliente.apellido }}
+                                        <span class="badge badge-bloqueado ms-2">Cuenta bloqueada</span>
+                                    </span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'pantalla_inicio_cliente' %}">
+                                            Mi Panel
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item text-danger" href="{% url 'cerrar_sesion_cliente' %}">
+                                            Cerrar Sesión
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        {% else %}
+                            <!-- Cliente logueado normal -->
+                            <div class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center nav-link-custom" href="#" role="button" data-bs-toggle="dropdown">
+                                    <span class="user-name">
+                                        Hola, {{ usuario_cliente.nombre }} {{ usuario_cliente.apellido }}
+                                    </span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'pantalla_inicio_cliente' %}">
+                                            Mi Panel
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'lista_reservas_clientes' %}">
+                                            Mis Reservas
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item text-danger" href="{% url 'cerrar_sesion_cliente' %}">
+                                            Cerrar Sesión
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        {% endif %}
                     {% else %}
                         <!-- Usuario no autenticado -->
                         <a href="{% url 'inicio_sesion_cliente' %}" class="btn btn-outline-light btn-nav me-2">Iniciar sesión</a>
@@ -254,17 +283,27 @@
                                                 <a href="{% url 'detalle_libro' libro.id %}" class="btn btn-primary">
                                                     Ver detalles
                                                 </a>
+
+                                                <!-- Lógica de reserva según estado del cliente -->
                                                 {% if cliente %}
-                                                    <!-- CLIENTE LOGUEADO: Reserva directa -->
-                                                    <form method="post" action="{% url 'reservar_libro' libro.id %}">
-                                                        {% csrf_token %}
-                                                        <button type="submit" class="btn btn-success w-100">
-                                                            <i class="fas fa-bookmark me-2"></i>Reservar
+                                                    {% if cliente.bloqueado %}
+                                                        <button class="btn btn-outline-danger w-100"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#modalClienteBloqueado">
+                                                            <i class="fas fa-ban me-2"></i>No puedes reservar
                                                         </button>
-                                                    </form>
+                                                    {% else %}
+                                                        <form method="post" action="{% url 'reservar_libro' libro.id %}">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-success w-100">
+                                                                <i class="fas fa-bookmark me-2"></i>Reservar
+                                                            </button>
+                                                        </form>
+                                                    {% endif %}
                                                 {% else %}
-                                                    <!-- NO LOGUEADO: modal pidiendo iniciar sesión -->
-                                                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalReservaLogin">
+                                                    <button class="btn btn-outline-primary"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modalReservaLogin">
                                                         <i class="fas fa-bookmark me-2"></i>Reservar
                                                     </button>
                                                 {% endif %}
@@ -276,13 +315,26 @@
                                                     Ver detalles
                                                 </a>
                                                 {% if cliente %}
-                                                    <!-- CLIENTE LOGUEADO: info de no disponible -->
-                                                    <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalReservaNoDisponible">
-                                                        <i class="fas fa-clock me-2"></i>Reservar
-                                                    </button>
+                                                    {% if cliente.bloqueado %}
+                                                        <!-- Cliente bloqueado: tampoco puede solicitar reserva futura -->
+                                                        <button class="btn btn-outline-danger w-100"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#modalClienteBloqueado">
+                                                            <i class="fas fa-ban me-2"></i>No puedes reservar
+                                                        </button>
+                                                    {% else %}
+                                                        <!-- Cliente logueado, libro no disponible: modal informativo -->
+                                                        <button class="btn btn-outline-secondary"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#modalReservaNoDisponible">
+                                                            <i class="fas fa-clock me-2"></i>Reservar
+                                                        </button>
+                                                    {% endif %}
                                                 {% else %}
-                                                    <!-- NO LOGUEADO: modal login -->
-                                                    <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalReservaLogin">
+                                                    <!-- No logueado: pedir inicio de sesión -->
+                                                    <button class="btn btn-outline-secondary"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modalReservaLogin">
                                                         <i class="fas fa-bookmark me-2"></i>Reservar
                                                     </button>
                                                 {% endif %}
@@ -459,7 +511,36 @@
         </div>
     </div>
 
+    <!-- Modal para clientes bloqueados -->
+    <div class="modal fade" id="modalClienteBloqueado" tabindex="-1" aria-labelledby="modalClienteBloqueadoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-reserva">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalClienteBloqueadoLabel">
+                        <i class="fas fa-ban me-2"></i>Acceso restringido
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="reserva-icon">🚫</div>
+                    <h4 class="mb-3">Tu cuenta está bloqueada</h4>
+                    <div class="info-reserva">
+                        <p class="mb-0">
+                            Actualmente no puedes realizar reservas ni compras desde tu cuenta.
+                            Por favor comunícate con la biblioteca para más información
+                            o regularizar tu situación.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Entendido</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </body>
 </html>
+

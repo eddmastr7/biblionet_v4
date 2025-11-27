@@ -343,9 +343,16 @@
                                     <option value="misterio">Misterio</option>
                                 </select>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="editorial" class="form-label">Editorial</label>
-                                <input type="text" class="form-control" id="editorial" name="editorial" required>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Editorial</label>
+                                <input
+                                    type="text"
+                                    name="editorial"
+                                    class="form-control"
+                                    list="lista-editoriales"
+                                    value="{{ editorial_preseleccionada }}"
+                                    placeholder="Escribe o selecciona una editorial..."
+                                >
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="anio_publicacion" class="form-label">Año de Publicación</label>
@@ -432,9 +439,16 @@
                                     <option value="misterio">Misterio</option>
                                 </select>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="edit_editorial" class="form-label">Editorial</label>
-                                <input type="text" class="form-control" id="edit_editorial" name="editorial" required>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Editorial</label>
+                                <input
+                                    type="text"
+                                    name="editorial"
+                                    class="form-control"
+                                    list="lista-editoriales"
+                                    value="{{ libro.editorial }}"
+                                    placeholder="Escribe o selecciona una editorial..."
+                                >
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="edit_anio_publicacion" class="form-label">Año de Publicación</label>
@@ -491,4 +505,10 @@
     }
     </script>
 </body>
+<datalist id="lista-editoriales">
+    {% for e in editoriales %}
+        <option value="{{ e }}"></option>
+    {% endfor %}
+</datalist>
+
 </html>
